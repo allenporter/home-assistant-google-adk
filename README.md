@@ -1,6 +1,6 @@
 # home-assistant-google-adk
 
-Home Assistant custom component that offers Agent functionality from Google ADK
+Home Assistant conversation agent custom component that offers Agent functionality from Google ADK
 
 ## Environment Pre-requisites
 
