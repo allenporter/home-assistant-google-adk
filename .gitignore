@@ -1,0 +1,13 @@
+.mypy_cache/
+*.pyc
+venv
+.venv
+*.egg-info
+deps
+ls
+__pycache__
+.coverage
+
+**/secrets.yaml
+config
+tmp
