@@ -2,20 +2,32 @@
 
 from __future__ import annotations
 
+import os
 import logging
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+
+from . import agent
+from .types import GoogleAdkContext, GoogleAdkConfigEntry
+from .const import CONF_GEMINI_API_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
 
-PLATFORMS: tuple[Platform] = ()  # type: ignore[invalid-assignment]
+PLATFORMS: tuple[Platform] = (Platform.CONVERSATION,)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: GoogleAdkConfigEntry) -> bool:
     """Set up a config entry."""
+    if os.environ.get("GOOGLE_API_KEY") is None:
+        os.environ["GOOGLE_API_KEY"] = entry.options[CONF_GEMINI_API_KEY]
+
+    llm_agent = await agent.async_create(hass, entry)
+    entry.runtime_data = GoogleAdkContext(
+        agent=llm_agent,
+    )
+
     await hass.config_entries.async_forward_entry_setups(
         entry,
         platforms=PLATFORMS,
@@ -24,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: GoogleAdkConfigEntry) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(
         entry,
@@ -32,6 +44,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_reload_entry(hass: HomeAssistant, entry: GoogleAdkConfigEntry) -> None:
     """Reload config entry."""
     await hass.config_entries.async_reload(entry.entry_id)

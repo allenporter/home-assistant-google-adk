@@ -12,3 +12,5 @@ syrupy>=4.6.1
 hassil>=3.2.0
 home-assistant-intents>=2025.9.24
 mutagen>=1.47.0
+
+google-adk==1.21.0

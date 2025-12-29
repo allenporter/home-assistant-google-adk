@@ -41,6 +41,15 @@ def mock_platforms() -> list[Platform]:
     return []
 
 
+@pytest.fixture(autouse=True)
+async def mock_dependencies(
+    hass: HomeAssistant,
+) -> None:
+    """Set up the integration."""
+    assert await async_setup_component(hass, "homeassistant", {})
+    assert await async_setup_component(hass, "conversation", {})
+
+
 @pytest.fixture(name="setup_integration")
 async def mock_setup_integration(
     hass: HomeAssistant,
