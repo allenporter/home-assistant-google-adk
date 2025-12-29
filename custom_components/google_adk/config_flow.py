@@ -94,9 +94,14 @@ class GoogleADKConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 data_updates=user_input,
             )
 
+        data = self._get_reconfigure_entry().data or {}
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=STEP_API_DATA_SCHEMA,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_API_KEY, default=data.get(CONF_API_KEY, "")): str,
+                }
+            ),
             description_placeholders={
                 "api_key_url": "https://aistudio.google.com/app/apikey"
             },
@@ -123,7 +128,11 @@ class GoogleADKConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             )
         return self.async_show_form(
             step_id="api",
-            data_schema=STEP_API_DATA_SCHEMA,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_API_KEY): str,
+                }
+            ),
             description_placeholders={
                 "api_key_url": "https://aistudio.google.com/app/apikey"
             },
