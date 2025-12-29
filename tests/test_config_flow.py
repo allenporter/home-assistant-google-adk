@@ -102,6 +102,8 @@ async def test_conversation_agent_subentry(
     assert len(mock_setup.mock_calls) == 1
 
 
+
+
 async def test_subentry_options_reconfiguration(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,
@@ -151,3 +153,29 @@ async def test_subentry_options_reconfiguration(
         CONF_DESCRIPTION: "Updated description.",
         CONF_INSTRUCTIONS: "Updated instructions.",
     }
+
+async def test_reconfigure_flow(hass: HomeAssistant, config_entry: MockConfigEntry) -> None:
+    """Test reconfigure flow for updating API key."""
+    assert config_entry.state is config_entries.ConfigEntryState.LOADED
+
+    # Start reconfigure flow (link to config entry via context)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_RECONFIGURE, "entry_id": config_entry.entry_id},
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert not result.get("errors")
+
+    # Submit new API key
+    with patch(f"custom_components.{DOMAIN}.async_setup_entry", return_value=True) as mock_setup:
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_API_KEY: "new_api_key"},
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == FlowResultType.ABORT
+    assert result2["reason"] == "reconfigure_successful"
+    assert len(mock_setup.mock_calls) == 1
+    assert config_entry.data[CONF_API_KEY] == "new_api_key"

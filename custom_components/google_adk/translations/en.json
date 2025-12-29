@@ -20,11 +20,22 @@
         "data_description": {
           "api_key": "The API key from Google AI Studio to access Gemini models."
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Google ADK",
+        "description": "Update your Google AI Studio API Key. You can get one at {api_key_url}.",
+        "data": {
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "The API key from Google AI Studio to access Gemini models."
+        }
       }
     },
     "abort": {
       "already_configured": "Account is already configured",
-      "reauth_successful": "Re-authentication was successful"
+      "reauth_successful": "Re-authentication was successful",
+      "reconfigure_successful": "Re-configuration was successful"
     }
   },
   "config_subentries": {
