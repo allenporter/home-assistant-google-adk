@@ -2,10 +2,59 @@
   "title": "Google ADK",
   "config": {
     "step": {
-      "user": {
+      "api": {
+        "description": "Enter your Google AI Studio API Key. You can get one at {api_key_url}.",
         "data": {
-          "agent_name": "Agent Name"
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "The API key from Google AI Studio to access Gemini models."
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Google ADK",
+        "description": "The Google ADK integration needs to re-authenticate your account.",
+        "data": {
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "The API key from Google AI Studio to access Gemini models."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Account is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "config_subentries": {
+    "conversation": {
+      "entry_type": "Conversation agent",
+      "initiate_flow": {
+        "reconfigure": "Reconfigure conversation agent",
+        "user": "Add conversation agent"
+      },
+      "step": {
+        "set_options": {
+          "title": "Configure Agent",
+          "description": "Configure the Google ADK Agent.",
+          "data": {
+            "name": "Name",
+            "model": "Model",
+            "description": "Description",
+            "instructions": "Instructions"
+          },
+          "data_description": {
+            "name": "A unique identifier for the agent (e.g., `kitchen_assistant`). This is used internally and by other agents to reference this agent.",
+            "model": "The Gemini model to use (e.g., `gemini-2.0-flash-exp`). Different models offer different trade-offs between speed, cost, and capability.",
+            "description": "A concise summary of what the agent does (e.g., \"Handles kitchen-related queries and timer management\"). In multi-agent systems, this description helps router agents decide when to hand off tasks to this agent.",
+            "instructions": "The core personality and rules for the agent. This defines how the agent should behave, what tone it should use, and any specific constraints. You can use Home Assistant templates here to inject dynamic context."
+          }
+        }
+      },
+      "abort": {
+        "entry_not_loaded": "The integration is not loaded yet.",
+        "reconfigure_successful": "Re-configuration was successful"
       }
     }
   }
