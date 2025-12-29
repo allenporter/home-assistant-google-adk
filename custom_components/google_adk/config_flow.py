@@ -180,8 +180,9 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
             )
             for api in llm.async_get_apis(self.hass)
         ]
+        # Exclude subagents from the same config entry as this subentry
         subagent_options: list[selector.SelectOptionDict] = _get_available_subagents(
-            self.hass
+            self.hass, self._get_entry().entry_id
         )
         _LOGGER.debug("tool_options: %s", tool_options)
         _LOGGER.debug("subagent_options: %s", subagent_options)
@@ -265,14 +266,18 @@ async def _options_schema_factory(
     return schema
 
 
-def _get_available_subagents(hass: HomeAssistant) -> list[selector.SelectOptionDict]:
-    """Return a list of available subagents (LLM agents) from all google_adk config entries."""
-    return [
-        selector.SelectOptionDict(
-            label=f"{entry.title} / {subentry.title}",
-            value=subentry.subentry_id,
-        )
-        for entry in hass.config_entries.async_entries(DOMAIN)
-        for subentry in entry.subentries.values()
-        if subentry.subentry_type == "conversation"
-    ]
+def _get_available_subagents(hass: HomeAssistant, current_entry_id: str | None = None) -> list[selector.SelectOptionDict]:
+    """Return a list of available subagents (LLM agents) from all google_adk config entries, excluding self."""
+    options = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if current_entry_id is not None and entry.entry_id == current_entry_id:
+            continue
+        for subentry in entry.subentries.values():
+            if subentry.subentry_type == "conversation":
+                options.append(
+                    selector.SelectOptionDict(
+                        label=f"{entry.title} / {subentry.title}",
+                        value=subentry.subentry_id,
+                    )
+                )
+    return options

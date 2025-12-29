@@ -334,7 +334,7 @@ async def test_tools_and_sub_agents(
                     CONF_MODEL: "gemini-2.5-flash",
                     CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
                     CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
-                    CONF_TOOLS: ["test_tool"],
+                    CONF_TOOLS: ["assist"],
                 },
             },
             {
@@ -368,8 +368,25 @@ async def test_tools_and_sub_agents(
                                 types.Part(
                                     function_call=types.FunctionCall(
                                         name="test_tool",
-                                        args={"param1": "Hello, how can I help you?"},
+                                        args={"param1": "test_value"},
                                     ),
+                                )
+                            ],
+                            role="model",
+                        ),
+                        finish_reason=types.FinishReason.STOP,
+                    )
+                ],
+            ),
+        ],
+        [
+            types.GenerateContentResponse(
+                candidates=[
+                    types.Candidate(
+                        content=types.Content(
+                            parts=[
+                                types.Part(
+                                    text="Completed tool call.",
                                 )
                             ],
                             role="model",
@@ -396,5 +413,5 @@ async def test_tools_and_sub_agents(
     assert result.response.error_code is None
     assert (
         result.response.as_dict()["speech"]["plain"]["speech"]
-        == "Hello, how can I help you?"
+        == "Completed tool call."
     )

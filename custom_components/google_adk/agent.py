@@ -157,8 +157,8 @@ class AdkLlmTool(BaseTool):
     def _get_declaration(self) -> Optional[FunctionDeclaration]:
         """Gets the OpenAPI specification of this tool in the form of a FunctionDeclaration."""
         return FunctionDeclaration(
-            name=self._name,
-            description=self._description,
+            name=self.name,
+            description=self.description,
             parameters=self._parameters,
         )
 
@@ -167,7 +167,7 @@ class AdkLlmTool(BaseTool):
     ) -> Any:
         """Run the tool asynchronously."""
         tool_input = llm.ToolInput(
-            tool_name=self._name,
+            tool_name=self.name,
             tool_args=args,
         )
         return await self._llm_api.async_call_tool(tool_input)

@@ -205,9 +205,13 @@ class GoogleAdkConversationEntity(
         )
         _LOGGER.info("---------------------------------")
 
-        llm_agent = await agent.async_create(
-            self.hass, self._subentry, llm_context=llm_context
-        )
+        try:
+            llm_agent = await agent.async_create(
+                self.hass, self._subentry, llm_context=llm_context
+            )
+        except Exception as err:
+            _LOGGER.error("Error creating LLM agent: %s", err)
+            raise
         runner = Runner(
             agent=llm_agent,
             app_name=agent_id,
@@ -225,17 +229,25 @@ class GoogleAdkConversationEntity(
         )
 
         run_config = RunConfig(streaming_mode=StreamingMode.SSE)
-        event_stream = runner.run_async(
-            session_id=chat_log.conversation_id,
-            new_message=content,
-            user_id=user_id,
-            run_config=run_config,
-        )
+        try:
+            event_stream = runner.run_async(
+                session_id=chat_log.conversation_id,
+                new_message=content,
+                user_id=user_id,
+                run_config=run_config,
+            )
+        except Exception as err:
+            _LOGGER.error("Error starting runner: %s", err)
+            raise
 
-        async for chunk in chat_log.async_add_delta_content_stream(
-            self.entity_id, _transform_stream(chat_log, event_stream)
-        ):
-            _LOGGER.debug("Chunk processed")
+        try:
+            async for chunk in chat_log.async_add_delta_content_stream(
+                self.entity_id, _transform_stream(chat_log, event_stream)
+            ):
+                _LOGGER.debug("Chunk processed")
+        except Exception as err:
+            _LOGGER.error("Error during chat log handling: %s", err)
+            raise
 
     async def _async_entry_update_listener(
         self, hass: HomeAssistant, entry: ConfigEntry
