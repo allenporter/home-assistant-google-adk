@@ -141,7 +141,6 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
         errors: dict[str, str] = {}
 
         if user_input is None:
-            _LOGGER.debug("set up is_new: %s", self._is_new)
             if self._is_new:
                 options: dict[str, Any] = RECOMMENDED_CONVERSATION_OPTIONS.copy()
             else:
@@ -150,7 +149,6 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
                 options = self._get_reconfigure_subentry().data.copy()
         else:
             options = user_input
-            _LOGGER.debug("save is_new: %s", self._is_new)
             if self._is_new:
                 return self.async_create_entry(
                     title=user_input.pop(CONF_NAME),
@@ -193,6 +191,4 @@ async def _options_schema_factory(is_new: bool, options: dict[str, Any]) -> vol.
             ): selector.TemplateSelector(),
         }
     )
-    _LOGGER.debug("Is new: %s", is_new)
-    _LOGGER.debug("Schema generated: %s", schema)
     return schema
