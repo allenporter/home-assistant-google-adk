@@ -7,6 +7,6 @@
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/allenporter/home-assistant-google-adk/issues",
-  "version": "0.0.1",
-  "requirements": ["google-adk==1.21.0"]
+  "requirements": ["google-adk==1.21.0"],
+  "version": "0.0.1"
 }
