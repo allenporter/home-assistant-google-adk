@@ -19,6 +19,7 @@ from homeassistant.config_entries import (
     SubentryFlowResult,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import llm
 
 
 from .const import (
@@ -27,6 +28,7 @@ from .const import (
     CONF_MODEL,
     CONF_INSTRUCTIONS,
     CONF_API_KEY,
+    CONF_TOOLS,
     DOMAIN,
     DEFAULT_TITLE,
 )
@@ -163,18 +165,26 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
     async def async_step_set_options(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Set conversation options."""
+        """Set conversation options with tool provider selection."""
         if self._get_entry().state != ConfigEntryState.LOADED:
             return self.async_abort(reason="entry_not_loaded")
 
         errors: dict[str, str] = {}
 
+        # Dynamically fetch available APIs from Home Assistant
+        tool_options: list[selector.SelectOptionDict] = [
+            selector.SelectOptionDict(
+                label=api.name,
+                value=api.id,
+            )
+            for api in llm.async_get_apis(self.hass)
+        ]
+        _LOGGER.debug("tool_options: %s", tool_options)
+
         if user_input is None:
             if self._is_new:
                 options: dict[str, Any] = RECOMMENDED_CONVERSATION_OPTIONS.copy()
             else:
-                # If this is a reconfiguration, we need to copy the existing options
-                # so that we can show the current values in the form.
                 options = self._get_reconfigure_subentry().data.copy()
         else:
             options = user_input
@@ -190,7 +200,7 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
                 data=user_input,
             )
 
-        schema = await _options_schema_factory(self._is_new, options)
+        schema = await _options_schema_factory(self._is_new, options, tool_options)
         return self.async_show_form(
             step_id="set_options", data_schema=vol.Schema(schema), errors=errors
         )
@@ -200,7 +210,7 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
 
 
 async def _options_schema_factory(
-    is_new: bool, options: dict[str, Any]
+    is_new: bool, options: dict[str, Any], tool_options: list
 ) -> dict[vol.Required | vol.Optional, Any]:
     """Return schema for an options flow."""
     schema: dict[vol.Required | vol.Optional, Any] = {}
@@ -220,6 +230,16 @@ async def _options_schema_factory(
                 CONF_INSTRUCTIONS,
                 default=options.get(CONF_INSTRUCTIONS, ""),
             ): selector.TemplateSelector(),
+            vol.Optional(
+                CONF_TOOLS,
+                default=options.get(CONF_TOOLS, []),
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=tool_options,
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
         }
     )
     return schema
