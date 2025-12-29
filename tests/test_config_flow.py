@@ -7,6 +7,9 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.core import HomeAssistant
 
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+)
 
 from custom_components.google_adk.const import (
     CONF_NAME,
@@ -65,7 +68,7 @@ async def test_conversation_agent_subentry(
     ) as mock_setup:
         result2 = await hass.config_entries.subentries.async_configure(
             result["flow_id"],
-            result["data_schema"](
+            result["data_schema"](  # type: ignore[call-non-callable]
                 {
                     CONF_NAME: "assistant_agent",
                     CONF_MODEL: "gemini-2.5-flash",
@@ -100,7 +103,8 @@ async def test_conversation_agent_subentry(
 
 
 async def test_subentry_options_reconfiguration(
-    hass: HomeAssistant, config_entry: config_entries.ConfigEntry
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
 ) -> None:
     """Test config flow options."""
     assert config_entry.state is config_entries.ConfigEntryState.LOADED

@@ -170,7 +170,9 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
     async_step_user = async_step_set_options
 
 
-async def _options_schema_factory(is_new: bool, options: dict[str, Any]) -> vol.Schema:
+async def _options_schema_factory(
+    is_new: bool, options: dict[str, Any]
+) -> dict[vol.Required | vol.Optional, Any]:
     """Return schema for an options flow."""
     schema: dict[vol.Required | vol.Optional, Any] = {}
     if is_new:

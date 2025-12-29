@@ -30,9 +30,6 @@ repos:
         entry: ty check . --ignore unresolved-import
         language: python
         pass_filenames: false
-        types_or:
-          - python
-          - pyi
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
