@@ -68,11 +68,23 @@ Tools allow your agent to interact with Home Assistant entities and call service
 
 Subagents enable advanced multi-agent workflows. You can optionally select one or more other Google ADK agents as subagents for your agent. This allows your agent to delegate tasks to specialized subagents, enabling more modular and scalable assistant designs. Subagents are referenced by their unique subentry ID and can be selected from any existing Google ADK agent configuration. If no subagents are selected, the agent will operate independently.
 
-## Roadmap
 
-Future updates may include:
--   **Bridging to other agent implementations**: Support for subagents from other domains or integrations.
--   **Expanded tool support**: More built-in and custom tool options.
+## Future Work
+
+The following advanced ADK features are planned for future development:
+
+1. **Planner support**: Integrate ADK's planning capabilities for LLM agents.
+2. **Expose agent thinking**: Make intermediate agent reasoning/thoughts visible in Home Assistant, with configuration options to enable/disable or control visibility.
+3. **Sessions and memory**: Support ADK session and memory APIs. The question of session/memory interop with Home Assistant is left open for future exploration.
+4. **Persistent memory and storage**: Design persistent memory for agents (distinct from session memory), with configuration options for enabling and selecting storage backends.
+5. **Memory ingestion strategies**: Implement memory ingestion (e.g., update memory every X turns or on-demand), referencing advanced ADK concepts.
+6. **Expose memory tools**: Provide tools for agents to interact with memory (read/write/query), and consider supporting multiple memory stores (e.g., per-agent memory as a configurable option).
+
+### Further Considerations
+
+1. Memory will be isolated per agent by default.
+2. Configuration and options flow will be used to manage these features.
+3. UI/UX and privacy/performance tradeoffs for memory/session data will be considered as features are designed.
 
 ## Development
 
