@@ -20,7 +20,10 @@ PLATFORMS: tuple[Platform] = (Platform.CONVERSATION,)
 async def async_setup_entry(hass: HomeAssistant, entry: GoogleAdkConfigEntry) -> bool:
     """Set up a config entry."""
     if os.environ.get("GOOGLE_API_KEY") is None:
+        _LOGGER.info("Setting GOOGLE_API_KEY environment variable")
         os.environ["GOOGLE_API_KEY"] = entry.data[CONF_API_KEY]
+    else:
+        _LOGGER.info("GOOGLE_API_KEY environment variable already set")
 
     await hass.config_entries.async_forward_entry_setups(
         entry,
