@@ -39,6 +39,7 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
 3.  **Configure Agent**:
     -   Once added, you can configure the agent's model and instructions via the integration options.
 
+
     ### Agent Configuration Options
 
     When creating or editing an agent, you can configure the following fields. These settings are crucial for defining the agent's identity and behavior, especially as you expand to multi-agent systems. See [Defining the Agent's Identity and Purpose](https://google.github.io/adk-docs/agents/llm-agents/#defining-the-agents-identity-and-purpose) in the ADK documentation for more details.
@@ -47,6 +48,8 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     -   **Model**: The Gemini model to use (e.g., `gemini-3-flash-preview`). Different models offer different trade-offs between speed, cost, and capability.
     -   **Description**: A concise summary of what the agent does (e.g., "Handles kitchen-related queries and timer management"). In multi-agent systems, this description helps router agents decide when to hand off tasks to this agent.
     -   **Instructions**: The core personality and rules for the agent. This defines how the agent should behave, what tone it should use, and any specific constraints. You can use Home Assistant templates here to inject dynamic context.
+    -   **Tools (optional)**: Select one or more tools that the agent can use to interact with Home Assistant entities or services. Tools extend the agent's capabilities beyond conversation, enabling it to take actions in your smart home.
+    -   **Subagents (optional)**: Select one or more other Google ADK agents (subagents) that this agent can delegate tasks to. Subagents allow you to build complex, multi-agent workflows by composing specialized agents together. Subagents are referenced by their unique subentry ID and can be from any other Google ADK config entry.
 
 ## Usage
 
@@ -54,11 +57,22 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
 2.  Select the **Google ADK** agent from the dropdown.
 3.  Start chatting!
 
+
+## Tools and Subagents
+
+### Tools
+
+Tools allow your agent to interact with Home Assistant entities and call services. When configuring an agent, you can optionally select from available tools to grant the agent additional capabilities, such as turning on lights, setting scenes, or running automations. Tools are optional—if none are selected, the agent will only provide conversational responses.
+
+### Subagents
+
+Subagents enable advanced multi-agent workflows. You can optionally select one or more other Google ADK agents as subagents for your agent. This allows your agent to delegate tasks to specialized subagents, enabling more modular and scalable assistant designs. Subagents are referenced by their unique subentry ID and can be selected from any existing Google ADK agent configuration. If no subagents are selected, the agent will operate independently.
+
 ## Roadmap
 
-Future updates will include:
--   **Tools**: Ability for the agent to control Home Assistant entities and call services.
--   **Subagents**: Support for complex workflows using multiple specialized agents.
+Future updates may include:
+-   **Bridging to other agent implementations**: Support for subagents from other domains or integrations.
+-   **Expanded tool support**: More built-in and custom tool options.
 
 ## Development
 

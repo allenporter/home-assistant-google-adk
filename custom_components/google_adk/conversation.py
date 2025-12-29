@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 from typing import Literal
 import logging
 
-from google.adk.agents import BaseAgent
 from google.adk.agents.run_config import StreamingMode, RunConfig
 from google.adk.events.event import Event
 from google.adk.sessions import InMemorySessionService
@@ -18,7 +17,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.const import MATCH_ALL
 from homeassistant.core import HomeAssistant, Context
-from homeassistant.helpers import device_registry as dr, intent
+from homeassistant.helpers import device_registry as dr, intent, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import DOMAIN
@@ -39,9 +38,8 @@ async def async_setup_entry(
     for subentry in config_entry.subentries.values():
         if subentry.subentry_type != "conversation":
             continue
-        llm_agent = await agent.async_create(hass, subentry)
         async_add_entities(
-            [GoogleAdkConversationEntity(config_entry, subentry, llm_agent)],
+            [GoogleAdkConversationEntity(config_entry, subentry)],
             config_subentry_id=subentry.subentry_id,
         )
 
@@ -104,14 +102,13 @@ class GoogleAdkConversationEntity(
         self,
         entry: GoogleAdkConfigEntry,
         subentry: ConfigSubentry,
-        llm_agent: BaseAgent,
     ) -> None:
         """Initialize the agent."""
         self.entry = entry
-        self._agent = llm_agent
-        self._attr_unique_id = entry.entry_id
+        self._subentry = subentry
+        self._attr_unique_id = subentry.subentry_id
         self._attr_device_info = dr.DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
+            identifiers={(DOMAIN, subentry.subentry_id)},
             name=subentry.title,
             manufacturer="Google",
             model=f"Google ADK Agent {subentry.title}",
@@ -154,7 +151,10 @@ class GoogleAdkConversationEntity(
             return err.as_conversation_result()
 
         await self._async_handle_chat_log(
-            chat_log, user_input.context, user_input.agent_id
+            chat_log,
+            user_input.context,
+            user_input.agent_id,
+            user_input.as_llm_context(DOMAIN),
         )
 
         intent_response = intent.IntentResponse(language=user_input.language)
@@ -176,6 +176,7 @@ class GoogleAdkConversationEntity(
         chat_log: conversation.ChatLog,
         context: Context,
         agent_id: str,
+        llm_context: llm.LLMContext,
     ) -> None:
         """Generate an answer for the chat log."""
         user_id = context.user_id or "unknown_user"
@@ -204,8 +205,11 @@ class GoogleAdkConversationEntity(
         )
         _LOGGER.info("---------------------------------")
 
+        llm_agent = await agent.async_create(
+            self.hass, self._subentry, llm_context=llm_context
+        )
         runner = Runner(
-            agent=self._agent,
+            agent=llm_agent,
             app_name=agent_id,
             session_service=self._session_service,
         )

@@ -3,15 +3,28 @@
 from collections.abc import Generator, AsyncGenerator
 from unittest.mock import AsyncMock, patch, Mock
 
+import voluptuous as vol
+
 from google.genai.errors import APIError, ClientError
 from google.genai import types
 import httpx
 import pytest
 
 from homeassistant.const import Platform
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.components import conversation
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import intent
+
+from custom_components.google_adk.const import (
+    CONF_API_KEY,
+    CONF_DESCRIPTION,
+    CONF_INSTRUCTIONS,
+    CONF_MODEL,
+    CONF_SUB_AGENTS,
+    CONF_TOOLS,
+    DOMAIN,
+)
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -75,6 +88,24 @@ def mock_send_message_stream_fixture(mock_client: Mock) -> Generator[AsyncMock]:
     mock_client.aio.models.generate_content_stream = mock_send_message_stream
 
     yield mock_send_message_stream
+
+
+@pytest.fixture(name="mock_tool", autouse=True)
+def mock_tool_fixture(hass: HomeAssistant) -> Generator[None, None, None]:
+    """Mock tool retrieval."""
+    mock_tool = AsyncMock()
+    mock_tool.name = "test_tool"
+    mock_tool.description = "Test function"
+    mock_tool.parameters = vol.Schema(
+        {vol.Optional("param1", description="Test parameters"): str}
+    )
+    mock_tool.async_call.return_value = "Test response"
+
+    with patch(
+        "homeassistant.helpers.llm.AssistAPI._async_get_tools", return_value=[]
+    ) as mock_get_tools:
+        mock_get_tools.return_value = [mock_tool]
+        yield
 
 
 @pytest.mark.parametrize(
@@ -269,4 +300,101 @@ async def test_multiple_parts(
     assert (
         result.response.as_dict()["speech"]["plain"]["speech"]
         == "The capital of France is Paris."
+    )
+
+
+@pytest.mark.parametrize("expected_lingering_tasks", [True])
+async def test_tools_and_sub_agents(
+    hass: HomeAssistant,
+    mock_send_message_stream: AsyncMock,
+) -> None:
+    """Test empty response."""
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Google ADK",
+        data={
+            CONF_API_KEY: "test_api_key",
+        },
+        subentries_data=[
+            {
+                "title": "calculator_agent",
+                "subentry_id": "ulid-calculator-conversation",
+                "subentry_type": "conversation",
+                "data": {
+                    CONF_MODEL: "gemini-2.5-flash",
+                    CONF_DESCRIPTION: "A calculator agent",
+                    CONF_INSTRUCTIONS: "You are a calculator.",
+                },
+            },
+            {
+                "title": "assistant_agent",
+                "subentry_id": "ulid-assistant-conversation",
+                "subentry_type": "conversation",
+                "data": {
+                    CONF_MODEL: "gemini-2.5-flash",
+                    CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
+                    CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
+                    CONF_TOOLS: ["test_tool"],
+                },
+            },
+            {
+                "title": "root_agent",
+                "subentry_id": "ulid-root-conversation",
+                "subentry_type": "conversation",
+                "data": {
+                    CONF_MODEL: "gemini-2.5-flash",
+                    CONF_DESCRIPTION: "A root agent that can delegate to sub-agents.",
+                    CONF_INSTRUCTIONS: "You are a root agent.",
+                    CONF_SUB_AGENTS: [
+                        "ulid-assistant-conversation",
+                        "ulid-calculator-conversation",
+                    ],
+                },
+            },
+        ],
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert config_entry.state is ConfigEntryState.LOADED
+
+    messages = [
+        [
+            types.GenerateContentResponse(
+                candidates=[
+                    types.Candidate(
+                        content=types.Content(
+                            parts=[
+                                types.Part(
+                                    function_call=types.FunctionCall(
+                                        name="test_tool",
+                                        args={"param1": "Hello, how can I help you?"},
+                                    ),
+                                )
+                            ],
+                            role="model",
+                        ),
+                        finish_reason=types.FinishReason.STOP,
+                    )
+                ],
+            ),
+        ],
+    ]
+
+    mock_send_message_stream.return_value = messages
+
+    result = await conversation.async_converse(
+        hass,
+        "Hello",
+        None,
+        Context(),
+        agent_id="conversation.assistant_agent",
+    )
+    assert result.response.response_type == intent.IntentResponseType.ACTION_DONE, (
+        result
+    )
+    assert result.response.error_code is None
+    assert (
+        result.response.as_dict()["speech"]["plain"]["speech"]
+        == "Hello, how can I help you?"
     )

@@ -19,7 +19,7 @@ from custom_components.google_adk.const import (
     CONF_DESCRIPTION,
     CONF_INSTRUCTIONS,
     CONF_TOOLS,
-    CONF_SUBAGENTS,
+    CONF_SUB_AGENTS,
 )
 
 
@@ -89,7 +89,7 @@ async def test_conversation_agent_subentry(
         CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
         CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
         CONF_TOOLS: ["assist"],
-        CONF_SUBAGENTS: [],
+        CONF_SUB_AGENTS: [],
     }
     assert len(config_entry.subentries) == 2
 
@@ -103,7 +103,7 @@ async def test_conversation_agent_subentry(
         CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
         CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
         CONF_TOOLS: ["assist"],
-        CONF_SUBAGENTS: [],
+        CONF_SUB_AGENTS: [],
     }
 
     assert len(mock_setup.mock_calls) == 1
@@ -158,7 +158,7 @@ async def test_subentry_options_reconfiguration(
         CONF_DESCRIPTION: "Updated description.",
         CONF_INSTRUCTIONS: "Updated instructions.",
         CONF_TOOLS: [],
-        CONF_SUBAGENTS: [],
+        CONF_SUB_AGENTS: [],
     }
 
 

@@ -29,7 +29,7 @@ from .const import (
     CONF_INSTRUCTIONS,
     CONF_API_KEY,
     CONF_TOOLS,
-    CONF_SUBAGENTS,
+    CONF_SUB_AGENTS,
     DOMAIN,
     DEFAULT_TITLE,
 )
@@ -251,8 +251,8 @@ async def _options_schema_factory(
                 )
             ),
             vol.Optional(
-                CONF_SUBAGENTS,
-                default=options.get(CONF_SUBAGENTS, []),
+                CONF_SUB_AGENTS,
+                default=options.get(CONF_SUB_AGENTS, []),
             ): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=subagent_options,
