@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from typing import Literal
 import logging
 
+from google.adk.agents import BaseAgent
 from google.adk.agents.run_config import StreamingMode, RunConfig
 from google.adk.events.event import Event
 from google.adk.sessions import InMemorySessionService
@@ -13,7 +14,7 @@ from google.genai.errors import APIError
 from google.genai import types
 
 from homeassistant.components import conversation
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.const import MATCH_ALL
 from homeassistant.core import HomeAssistant, Context
@@ -22,6 +23,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import DOMAIN
 from .types import GoogleAdkConfigEntry
+from . import agent
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,7 +36,14 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up conversation entities."""
-    async_add_entities([GoogleAdkConversationEntity(config_entry)])
+    for subentry in config_entry.subentries.values():
+        if subentry.subentry_type != "conversation":
+            continue
+        llm_agent = await agent.async_create(hass, subentry)
+        async_add_entities(
+            [GoogleAdkConversationEntity(config_entry, subentry, llm_agent)],
+            config_subentry_id=subentry.subentry_id,
+        )
 
 
 async def _transform_stream(
@@ -91,16 +100,21 @@ class GoogleAdkConversationEntity(
     _attr_name = None
     _attr_supports_streaming = True
 
-    def __init__(self, entry: GoogleAdkConfigEntry) -> None:
+    def __init__(
+        self,
+        entry: GoogleAdkConfigEntry,
+        subentry: ConfigSubentry,
+        llm_agent: BaseAgent,
+    ) -> None:
         """Initialize the agent."""
         self.entry = entry
-        self._agent = entry.runtime_data.agent
+        self._agent = llm_agent
         self._attr_unique_id = entry.entry_id
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=entry.title,
+            name=subentry.title,
             manufacturer="Google",
-            model=f"Google ADK Agent {entry.title}",
+            model=f"Google ADK Agent {subentry.title}",
             entry_type=dr.DeviceEntryType.SERVICE,
         )
         self._session_service = InMemorySessionService()  # type: ignore[no-untyped-call]

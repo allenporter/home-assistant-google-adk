@@ -8,9 +8,8 @@ import logging
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from . import agent
-from .types import GoogleAdkContext, GoogleAdkConfigEntry
-from .const import CONF_GEMINI_API_KEY
+from .types import GoogleAdkConfigEntry
+from .const import CONF_API_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,12 +20,7 @@ PLATFORMS: tuple[Platform] = (Platform.CONVERSATION,)
 async def async_setup_entry(hass: HomeAssistant, entry: GoogleAdkConfigEntry) -> bool:
     """Set up a config entry."""
     if os.environ.get("GOOGLE_API_KEY") is None:
-        os.environ["GOOGLE_API_KEY"] = entry.options[CONF_GEMINI_API_KEY]
-
-    llm_agent = await agent.async_create(hass, entry)
-    entry.runtime_data = GoogleAdkContext(
-        agent=llm_agent,
-    )
+        os.environ["GOOGLE_API_KEY"] = entry.data[CONF_API_KEY]
 
     await hass.config_entries.async_forward_entry_setups(
         entry,

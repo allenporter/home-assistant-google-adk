@@ -2,7 +2,7 @@
 
 from collections.abc import Generator, AsyncGenerator
 import logging
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -11,8 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 from custom_components.google_adk.const import (
     DOMAIN,
-    CONF_GEMINI_API_KEY,
-    CONF_NAME,
+    CONF_API_KEY,
     CONF_MODEL,
     CONF_DESCRIPTION,
     CONF_INSTRUCTIONS,
@@ -70,16 +69,25 @@ async def mock_config_entry(
 ) -> MockConfigEntry:
     """Fixture to create a configuration entry."""
     config_entry = MockConfigEntry(
-        data={},
         domain=DOMAIN,
-        options={
-            CONF_NAME: "assistant_agent",
-            CONF_GEMINI_API_KEY: "test_api_key",
-            CONF_MODEL: "gemini-2.5-flash",
-            CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
-            CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
+        title="Google ADK",
+        data={
+            CONF_API_KEY: "test_api_key",
         },
+        subentries_data=[
+            {
+                "title": "assistant_agent",
+                "subentry_id": "ulid-conversation",
+                "subentry_type": "conversation",
+                "data": {
+                    CONF_MODEL: "gemini-2.5-flash",
+                    CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
+                    CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
+                },
+            }
+        ],
     )
+    config_entry.runtime_data = Mock()
     config_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()

@@ -16,7 +16,7 @@ from homeassistant.helpers import intent
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
-TEST_AGENT_ID = "conversation.mock_title"
+TEST_AGENT_ID = "conversation.assistant_agent"
 
 API_ERROR_500 = APIError(
     500,
