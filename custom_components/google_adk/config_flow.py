@@ -18,7 +18,7 @@ from homeassistant.config_entries import (
     ConfigFlow,
     SubentryFlowResult,
 )
-from homeassistant.core import callback
+from homeassistant.core import callback, HomeAssistant
 from homeassistant.helpers import llm
 
 
@@ -29,6 +29,7 @@ from .const import (
     CONF_INSTRUCTIONS,
     CONF_API_KEY,
     CONF_TOOLS,
+    CONF_SUBAGENTS,
     DOMAIN,
     DEFAULT_TITLE,
 )
@@ -179,7 +180,11 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
             )
             for api in llm.async_get_apis(self.hass)
         ]
+        subagent_options: list[selector.SelectOptionDict] = _get_available_subagents(
+            self.hass
+        )
         _LOGGER.debug("tool_options: %s", tool_options)
+        _LOGGER.debug("subagent_options: %s", subagent_options)
 
         if user_input is None:
             if self._is_new:
@@ -200,7 +205,9 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
                 data=user_input,
             )
 
-        schema = await _options_schema_factory(self._is_new, options, tool_options)
+        schema = await _options_schema_factory(
+            self._is_new, options, tool_options, subagent_options
+        )
         return self.async_show_form(
             step_id="set_options", data_schema=vol.Schema(schema), errors=errors
         )
@@ -210,7 +217,10 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
 
 
 async def _options_schema_factory(
-    is_new: bool, options: dict[str, Any], tool_options: list
+    is_new: bool,
+    options: dict[str, Any],
+    tool_options: list[selector.SelectOptionDict],
+    subagent_options: list[selector.SelectOptionDict],
 ) -> dict[vol.Required | vol.Optional, Any]:
     """Return schema for an options flow."""
     schema: dict[vol.Required | vol.Optional, Any] = {}
@@ -240,6 +250,29 @@ async def _options_schema_factory(
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
+            vol.Optional(
+                CONF_SUBAGENTS,
+                default=options.get(CONF_SUBAGENTS, []),
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=subagent_options,
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
         }
     )
     return schema
+
+
+def _get_available_subagents(hass: HomeAssistant) -> list[selector.SelectOptionDict]:
+    """Return a list of available subagents (LLM agents) from all google_adk config entries."""
+    return [
+        selector.SelectOptionDict(
+            label=f"{entry.title} / {subentry.title}",
+            value=subentry.subentry_id,
+        )
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        for subentry in entry.subentries.values()
+        if subentry.subentry_type == "conversation"
+    ]
