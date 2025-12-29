@@ -9,14 +9,19 @@ import pytest
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
+from custom_components.google_adk.const import (
+    DOMAIN,
+    CONF_GEMINI_API_KEY,
+    CONF_NAME,
+    CONF_MODEL,
+    CONF_DESCRIPTION,
+    CONF_INSTRUCTIONS,
+)
 
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
 )
 
-from custom_components.google_adk.const import (
-    DOMAIN,
-)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,21 +55,21 @@ async def mock_setup_integration(
         yield
 
 
-@pytest.fixture(name="zwave_device_id")
-def mock_zwave_device_id() -> str:
-    """Fixture for a Z-Wave device ID."""
-    return "some-device-id"
-
-
 @pytest.fixture(name="config_entry")
 async def mock_config_entry(
-    hass: HomeAssistant, zwave_device_id: str
+    hass: HomeAssistant,
 ) -> MockConfigEntry:
     """Fixture to create a configuration entry."""
     config_entry = MockConfigEntry(
         data={},
         domain=DOMAIN,
-        options={},
+        options={
+            CONF_NAME: "assistant_agent",
+            CONF_GEMINI_API_KEY: "test_api_key",
+            CONF_MODEL: "gemini-2.5-flash",
+            CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
+            CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
+        },
     )
     config_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(config_entry.entry_id)

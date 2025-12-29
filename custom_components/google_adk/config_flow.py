@@ -10,8 +10,10 @@ import voluptuous as vol
 from homeassistant.helpers import selector
 from homeassistant.helpers.schema_config_entry_flow import (
     SchemaConfigFlowHandler,
+    SchemaCommonFlowHandler,
     SchemaFlowFormStep,
 )
+
 
 from .const import (
     CONF_NAME,
@@ -39,16 +41,35 @@ CONFIG_FLOW = {
                 vol.Optional(CONF_DESCRIPTION): selector.TextSelector(
                     selector.TextSelectorConfig(multiline=True)
                 ),
-                vol.Optional(CONF_INSTRUCTIONS): selector.TextSelector(
-                    selector.TextSelectorConfig(multiline=True)
-                ),
+                vol.Optional(CONF_INSTRUCTIONS): selector.TemplateSelector(),
             }
         )
     )
 }
 
+
+async def _options_schema_factory(handler: SchemaCommonFlowHandler) -> vol.Schema:
+    """Return schema for an options flow."""
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_MODEL,
+                default=handler.options.get(CONF_MODEL),
+            ): selector.TextSelector(selector.TextSelectorConfig()),
+            vol.Required(
+                CONF_DESCRIPTION,
+                default=handler.options.get(CONF_DESCRIPTION, ""),
+            ): selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
+            vol.Required(
+                CONF_INSTRUCTIONS,
+                default=handler.options.get(CONF_INSTRUCTIONS, ""),
+            ): selector.TemplateSelector(),
+        }
+    )
+
+
 OPTIONS_FLOW = {
-    "init": SchemaFlowFormStep(),
+    "init": SchemaFlowFormStep(schema=_options_schema_factory),
 }
 
 

@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 _LOGGER = logging.getLogger(__name__)
 
 
-PLATFORMS: tuple[Platform] = (Platform.EVENT,)
+PLATFORMS: tuple[Platform] = ()  # type: ignore[invalid-assignment]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -20,6 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry,
         platforms=PLATFORMS,
     )
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
 
 
@@ -29,3 +30,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry,
         PLATFORMS,
     )
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry."""
+    await hass.config_entries.async_reload(entry.entry_id)
