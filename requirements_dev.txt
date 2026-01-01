@@ -16,4 +16,4 @@ mutagen>=1.47.0
 google-adk==1.21.0
 
 # Not compatible with latest aiodns https://github.com/home-assistant/core/pull/158695
-pycares==4.11.0
+pycares==5.0.1
