@@ -10,7 +10,6 @@ from google.adk.agents import BaseAgent, LlmAgent
 from google.genai.types import (
     FunctionDeclaration,
     Schema,
-    Tool,
 )
 from voluptuous_openapi import convert
 
