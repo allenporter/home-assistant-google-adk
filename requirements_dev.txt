@@ -13,7 +13,7 @@ hassil>=3.2.0
 home-assistant-intents>=2025.9.24
 mutagen>=1.47.0
 
-google-adk==1.22.0
+google-adk==1.22.1
 
 # Not compatible with latest aiodns https://github.com/home-assistant/core/pull/158695
 pycares==4.11.0
