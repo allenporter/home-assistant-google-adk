@@ -10,7 +10,6 @@ from google.adk.agents import BaseAgent, LlmAgent
 from google.genai.types import (
     FunctionDeclaration,
     Schema,
-    Tool,
 )
 from voluptuous_openapi import convert
 
@@ -29,14 +28,14 @@ async def async_create(
 ) -> BaseAgent:
     """Register all agents using the agent framework."""
     _LOGGER.debug("Registering Google ADK agent '%s'", subentry.title)
-    tools = await _async_create_tools(hass, subentry, llm_context)
+    tools: list[BaseTool] = await _async_create_tools(hass, subentry, llm_context)
     sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
     return LlmAgent(
         name=slugify(subentry.title, separator="_"),
         model=subentry.data[CONF_MODEL],
         description=subentry.data[CONF_DESCRIPTION],
         instruction=subentry.data[CONF_INSTRUCTIONS],
-        tools=tools,
+        tools=tools,  # type: ignore[invalid-argument-type]
         sub_agents=sub_agents,
     )
 
@@ -52,7 +51,7 @@ def _sub_agent_entry(entry_id: str, hass: HomeAssistant) -> ConfigSubentry | Non
 
 async def _async_create_sub_agents(
     hass: HomeAssistant, subentry: ConfigSubentry, llm_context: llm.LLMContext
-) -> BaseAgent:
+) -> list[BaseAgent]:
     """Create sub_agents for a given agent subentry."""
     sub_agents: list[BaseAgent] = []
     for sub_agent_id in subentry.data.get("sub_agents", []):
@@ -143,7 +142,7 @@ class AdkLlmTool(BaseTool):
     """Home Assistant Tool wrapper."""
 
     def __init__(
-        self, llm_api: llm.LLMApi, tool: llm.Tool, hass: HomeAssistant
+        self, llm_api: llm.APIInstance, tool: llm.Tool, hass: HomeAssistant
     ) -> None:
         """Initialize the Home Assistant Tool."""
         super().__init__(name=tool.name, description=tool.description)
@@ -177,7 +176,7 @@ async def _async_create_tools(
     hass: HomeAssistant,
     subentry: ConfigSubentry,
     llm_context: llm.LLMContext,
-) -> list[Tool]:
+) -> list[BaseTool]:
     """Create tools for a given agent subentry."""
     tools = []
     if subentry.data.get("tools"):
