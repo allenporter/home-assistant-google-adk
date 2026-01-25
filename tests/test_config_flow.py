@@ -1,7 +1,9 @@
 """Tests for the config flow."""
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+from collections.abc import Generator
 
+import pytest
 
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
@@ -194,3 +196,58 @@ async def test_reconfigure_flow(
     assert result2["reason"] == "reconfigure_successful"
     assert len(mock_setup.mock_calls) == 1
     assert config_entry.data[CONF_API_KEY] == "new_api_key"
+
+
+@pytest.fixture(name="llm_api")
+def llm_api_fixture() -> Generator[None, None, None]:
+    """Fixture to override APIs with a fake API."""
+    # Mock llm.async_get_apis to return only 'assist'
+    mock_api = MagicMock()
+    mock_api.id = "assist"
+    mock_api.name = "Assist"
+    with patch(
+        "homeassistant.helpers.llm.async_get_apis",
+        return_value=[mock_api],
+    ):
+        yield
+
+
+@pytest.mark.parametrize(
+    ("current_tools", "expected_suggested"),
+    [
+        (["assist"], ["assist"]),
+        (["non-existent"], []),
+        (["assist", "non-existent"], ["assist"]),
+    ],
+)
+async def test_reconfigure_subentry_invalid_tools(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    llm_api: None,
+    current_tools: list[str],
+    expected_suggested: list[str],
+) -> None:
+    """Test llm_hass_api field (tools) values when reconfiguring a subentry."""
+    assert config_entry.state is config_entries.ConfigEntryState.LOADED
+    subentry = next(iter(config_entry.subentries.values()))
+
+    # Update subentry data with current_tools
+    hass.config_entries.async_update_subentry(
+        config_entry,
+        subentry,
+        data={**subentry.data, CONF_TOOLS: current_tools},
+    )
+    await hass.async_block_till_done()
+
+    # Initiate the options flow (reconfigure)
+    result = await config_entry.start_subentry_reconfigure_flow(
+        hass, subentry.subentry_id
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "set_options"
+
+    # Only valid tools should be suggested
+    schema = result["data_schema"].schema
+    key = next(k for k in schema if k == CONF_TOOLS)
+    assert key.default() == expected_suggested

@@ -194,6 +194,13 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
                 options = self._get_reconfigure_subentry().data.copy()
         else:
             options = user_input
+
+        # Filter out invalid tools from suggested values
+        if CONF_TOOLS in options and (tools := options[CONF_TOOLS]):
+            known_apis = {api.id for api in llm.async_get_apis(self.hass)}
+            options[CONF_TOOLS] = [tool for tool in tools if tool in known_apis]
+
+        if user_input is not None:
             if self._is_new:
                 return self.async_create_entry(
                     title=user_input.pop(CONF_NAME),
@@ -266,7 +273,9 @@ async def _options_schema_factory(
     return schema
 
 
-def _get_available_subagents(hass: HomeAssistant, current_entry_id: str | None = None) -> list[selector.SelectOptionDict]:
+def _get_available_subagents(
+    hass: HomeAssistant, current_entry_id: str | None = None
+) -> list[selector.SelectOptionDict]:
     """Return a list of available subagents (LLM agents) from all google_adk config entries, excluding self."""
     options = []
     for entry in hass.config_entries.async_entries(DOMAIN):
