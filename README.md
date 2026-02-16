@@ -2,6 +2,13 @@
 
 This is a custom component for Home Assistant that integrates the [Google Agent Development Kit (ADK)](https://google.github.io/adk-docs/). It allows you to create conversational agents powered by Google's Gemini models directly within Home Assistant.
 
+<p align="center">
+  <img src="static/agent-conversation.png" width="400" alt="Agent Conversation" />
+  <img src="static/agent-memory-recall.png" width="400" alt="Memory Recall" />
+</p>
+
+*Left: The agent discussing cats and mentioning subagents. Right: The agent recalling that information in a later conversation.*
+
 ## Features
 
 - **Conversational Agent**: Chat with Gemini models via Home Assistant's Assist interface.
@@ -38,8 +45,6 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     - Click **Add Integration** and search for **Google ADK**.
     - Enter your **API Key**.
 
-    ![Config Flow Screenshot](static/config-flow-agent-memory.png)
-
 3.  **Configure Agent**:
 
     - Once added, you can configure the agent's model and instructions via the integration options.
@@ -47,6 +52,9 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     ### Agent Configuration Options
 
     When creating or editing an agent, you can configure the following fields. These settings are crucial for defining the agent's identity and behavior, especially as you expand to multi-agent systems. See [Defining the Agent's Identity and Purpose](https://google.github.io/adk-docs/agents/llm-agents/#defining-the-agents-identity-and-purpose) in the ADK documentation for more details.
+
+    <img src="static/config-flow-agent-memory.png" width="400" alt="Config Flow Screenshot" />
+
 
     - **Name**: A unique identifier for the agent (e.g., `kitchen_assistant`). This is used internally and by other agents to reference this agent.
     - **Model**: The Gemini model to use (e.g., `gemini-3-flash-preview`). Different models offer different trade-offs between speed, cost, and capability.
@@ -62,8 +70,6 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
 1.  Go to the **Assist** icon (top right) in Home Assistant.
 2.  Select the **Google ADK** agent from the dropdown.
 3.  Start chatting!
-
-![Agent Conversation](static/agent-conversation.png)
 
 ## Tools and Subagents
 
@@ -85,8 +91,6 @@ The Google ADK integration supports persistent memory, allowing agents to retain
 - **Storage**: Memories are stored locally in your Home Assistant configuration directory under `.storage/google_adk.memory.<subentry_id>`.
 - **Retrieval**: When memory is enabled, the agent automatically searches for relevant past information from both history and summaries based on your current query.
 - **Summarization**: When enabled, the agent records the full conversation history. Every 25 "turns" (messages), a non-blocking background task is triggered to distill the historical context into a concise summary. This ensures the agent's long-term memory remains efficient while preserving the fine-grained details of recent interactions.
-
-![Memory Recall](static/agent-memory-recall.png)
 
 ## Future Work
 
