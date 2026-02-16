@@ -3,10 +3,12 @@
 import logging
 from typing import Any, Optional, cast
 from slugify import slugify
+from collections.abc import Callable, Awaitable
 
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 from google.adk.agents import BaseAgent, LlmAgent
+from google.adk.agents.callback_context import CallbackContext
 from google.genai.types import (
     FunctionDeclaration,
     Schema,
@@ -17,7 +19,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.helpers import llm
 
-from .const import CONF_MODEL, CONF_INSTRUCTIONS, CONF_DESCRIPTION, DOMAIN
+from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+from google.adk.sessions import Session
+
+from .const import (
+    CONF_MODEL,
+    CONF_INSTRUCTIONS,
+    CONF_DESCRIPTION,
+    DOMAIN,
+    CONF_MEMORY_ENABLED,
+)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +41,13 @@ async def async_create(
     _LOGGER.debug("Registering Google ADK agent '%s'", subentry.title)
     tools: list[BaseTool] = await _async_create_tools(hass, subentry, llm_context)
     sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
-    return LlmAgent(
+    sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
+
+    memory_enabled = subentry.data.get(CONF_MEMORY_ENABLED, False)
+    if memory_enabled:
+        tools.append(PreloadMemoryTool())
+
+    agent = LlmAgent(
         name=slugify(subentry.title, separator="_"),
         model=subentry.data[CONF_MODEL],
         description=subentry.data[CONF_DESCRIPTION],
@@ -38,6 +55,11 @@ async def async_create(
         tools=tools,  # type: ignore[invalid-argument-type]
         sub_agents=sub_agents,
     )
+
+    if memory_enabled:
+        agent.after_agent_callback = _create_memory_callback(hass, subentry)
+
+    return agent
 
 
 def _sub_agent_entry(entry_id: str, hass: HomeAssistant) -> ConfigSubentry | None:
@@ -184,3 +206,24 @@ async def _async_create_tools(
         for tool in llm_api.tools:
             tools.append(AdkLlmTool(llm_api, tool, hass))
     return tools
+
+
+def _create_memory_callback(
+    hass: HomeAssistant, subentry: ConfigSubentry
+) -> Callable[[CallbackContext], Awaitable[None]]:
+    """Create a callback to save session to memory."""
+
+    async def auto_save_session_to_memory_callback(
+        callback_context: CallbackContext,
+    ) -> None:
+        """Save session to memory."""
+        session: Session = callback_context._invocation_context.session
+        memory_service = callback_context._invocation_context.memory_service
+
+        if not memory_service:
+            _LOGGER.warning("Memory service not available in context")
+            return
+
+        await memory_service.add_session_to_memory(session)
+
+    return auto_save_session_to_memory_callback

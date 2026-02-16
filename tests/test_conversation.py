@@ -412,6 +412,5 @@ async def test_tools_and_sub_agents(
     )
     assert result.response.error_code is None
     assert (
-        result.response.as_dict()["speech"]["plain"]["speech"]
-        == "Completed tool call."
+        result.response.as_dict()["speech"]["plain"]["speech"] == "Completed tool call."
     )

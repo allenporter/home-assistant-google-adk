@@ -22,6 +22,8 @@ from custom_components.google_adk.const import (
     CONF_INSTRUCTIONS,
     CONF_TOOLS,
     CONF_SUB_AGENTS,
+    CONF_MEMORY_ENABLED,
+    CONF_MEMORY_SUMMARIZE,
 )
 
 
@@ -79,6 +81,8 @@ async def test_conversation_agent_subentry(
                     CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
                     CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
                     CONF_TOOLS: ["assist"],
+                    CONF_MEMORY_ENABLED: False,
+                    CONF_MEMORY_SUMMARIZE: False,
                 }
             ),
         )
@@ -92,6 +96,8 @@ async def test_conversation_agent_subentry(
         CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
         CONF_TOOLS: ["assist"],
         CONF_SUB_AGENTS: [],
+        CONF_MEMORY_ENABLED: False,
+        CONF_MEMORY_SUMMARIZE: False,
     }
     assert len(config_entry.subentries) == 2
 
@@ -106,6 +112,8 @@ async def test_conversation_agent_subentry(
         CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
         CONF_TOOLS: ["assist"],
         CONF_SUB_AGENTS: [],
+        CONF_MEMORY_ENABLED: False,
+        CONF_MEMORY_SUMMARIZE: False,
     }
 
     assert len(mock_setup.mock_calls) == 1
@@ -146,6 +154,8 @@ async def test_subentry_options_reconfiguration(
                 CONF_MODEL: "gemini-3-flash",
                 CONF_DESCRIPTION: "Updated description.",
                 CONF_INSTRUCTIONS: "Updated instructions.",
+                CONF_MEMORY_ENABLED: False,
+                CONF_MEMORY_SUMMARIZE: False,
             },
         )
         await hass.async_block_till_done()
@@ -161,6 +171,8 @@ async def test_subentry_options_reconfiguration(
         CONF_INSTRUCTIONS: "Updated instructions.",
         CONF_TOOLS: [],
         CONF_SUB_AGENTS: [],
+        CONF_MEMORY_ENABLED: False,
+        CONF_MEMORY_SUMMARIZE: False,
     }
 
 
@@ -235,7 +247,12 @@ async def test_reconfigure_subentry_invalid_tools(
     hass.config_entries.async_update_subentry(
         config_entry,
         subentry,
-        data={**subentry.data, CONF_TOOLS: current_tools},
+        data={
+            **subentry.data,
+            CONF_TOOLS: current_tools,
+            CONF_MEMORY_ENABLED: False,
+            CONF_MEMORY_SUMMARIZE: False,
+        },
     )
     await hass.async_block_till_done()
 

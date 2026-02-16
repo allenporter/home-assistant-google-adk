@@ -55,7 +55,9 @@
             "description": "Description",
             "instructions": "Instructions",
             "tools": "Tools",
-            "sub_agents": "Sub-agents"
+            "sub_agents": "Sub-agents",
+            "memory_enabled": "Memory Enabled",
+            "memory_summarize": "Summarize Memory"
           },
           "data_description": {
             "name": "A unique identifier for the agent (e.g., `kitchen_assistant`). This is used internally and by other agents to reference this agent.",
@@ -63,7 +65,9 @@
             "description": "A concise summary of what the agent does (e.g., \"Handles kitchen-related queries and timer management\"). In multi-agent systems, this description helps router agents decide when to hand off tasks to this agent.",
             "instructions": "The core personality and rules for the agent. This defines how the agent should behave, what tone it should use, and any specific constraints. You can use Home Assistant templates here to inject dynamic context.",
             "tools": "Select one or more Home Assistant APIs to expose as tools for this agent. If none are selected, the agent will not have access to any tool calls.",
-            "sub_agents": "Optionally select other conversation agents to register as sub-agents. This allows the agent to delegate tasks to specialized agents when appropriate."
+            "sub_agents": "Optionally select other conversation agents to register as sub-agents. This allows the agent to delegate tasks to specialized agents when appropriate.",
+            "memory_enabled": "Enable memory for this agent. The agent will remember past conversations and use them to provide more relevant responses.",
+            "memory_summarize": "Summarize memory for this agent. The agent will summarize past conversations and use them to provide more relevant responses."
           }
         }
       },

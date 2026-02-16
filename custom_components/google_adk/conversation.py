@@ -1,16 +1,17 @@
 """Conversation agent for the Rulebook agent."""
 
 from collections.abc import AsyncGenerator
+from functools import partial
 from typing import Literal
 import logging
 
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
 from google.adk.agents.run_config import StreamingMode, RunConfig
 from google.adk.events.event import Event
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
-from google.genai.errors import APIError
-
-from google.genai import types
 
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
@@ -20,8 +21,15 @@ from homeassistant.core import HomeAssistant, Context
 from homeassistant.helpers import device_registry as dr, intent, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    CONF_MEMORY_ENABLED,
+    CONF_API_KEY,
+    CONF_MODEL,
+    CONF_MEMORY_SUMMARIZE,
+)
 from .types import GoogleAdkConfigEntry
+from .local_memory_service import LocalFileMemoryService
 from . import agent
 
 
@@ -115,6 +123,7 @@ class GoogleAdkConversationEntity(
             entry_type=dr.DeviceEntryType.SERVICE,
         )
         self._session_service = InMemorySessionService()  # type: ignore[no-untyped-call]
+        self._memory_service: LocalFileMemoryService | None = None
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:
@@ -124,6 +133,29 @@ class GoogleAdkConversationEntity(
     async def async_added_to_hass(self) -> None:
         """When entity is added to Home Assistant."""
         await super().async_added_to_hass()
+
+        # Get settings for memory summarization
+        client: genai.Client | None = None
+        summarize = self._subentry.data.get(CONF_MEMORY_SUMMARIZE, False)
+        model_id = self._subentry.data.get(CONF_MODEL)
+
+        if summarize:
+            api_key = self.entry.data.get(CONF_API_KEY)
+            if api_key:
+                client = await self.hass.async_add_executor_job(
+                    partial(genai.Client, api_key=api_key)
+                )
+            else:
+                _LOGGER.error("API key not found for memory summarization")
+                summarize = False
+
+        self._memory_service = LocalFileMemoryService(
+            self.hass,
+            storage_key=f"{DOMAIN}.memory.{self._subentry.subentry_id}",
+            summarize=summarize,
+            client=client,
+            model_id=model_id,
+        )
         conversation.async_set_agent(self.hass, self.entry, self)
         self.entry.async_on_unload(
             self.entry.add_update_listener(self._async_entry_update_listener)
@@ -141,8 +173,9 @@ class GoogleAdkConversationEntity(
     ) -> conversation.ConversationResult:
         """Process the user input and call the API."""
         try:
+            llm_context: llm.LLMContext = user_input.as_llm_context(DOMAIN)
             await chat_log.async_provide_llm_data(
-                user_input.as_llm_context(DOMAIN),
+                llm_context,
                 user_llm_hass_api=None,
                 user_llm_prompt=None,
                 user_extra_system_prompt=user_input.extra_system_prompt,
@@ -180,13 +213,13 @@ class GoogleAdkConversationEntity(
     ) -> None:
         """Generate an answer for the chat log."""
         user_id = context.user_id or "unknown_user"
-        session = await self._session_service.get_session(  # noqa: F841
+        session = await self._session_service.get_session(
             app_name=agent_id,
             user_id=user_id,
             session_id=chat_log.conversation_id,
         )
         if not session:
-            session = await self._session_service.create_session(  # noqa: F841
+            session = await self._session_service.create_session(
                 app_name=agent_id,
                 user_id=user_id,
                 session_id=chat_log.conversation_id,
@@ -216,6 +249,9 @@ class GoogleAdkConversationEntity(
             agent=llm_agent,
             app_name=agent_id,
             session_service=self._session_service,
+            memory_service=self._memory_service
+            if self._subentry.data.get(CONF_MEMORY_ENABLED)
+            else None,
         )
 
         last_content = chat_log.content[-1]

@@ -30,6 +30,8 @@ from .const import (
     CONF_API_KEY,
     CONF_TOOLS,
     CONF_SUB_AGENTS,
+    CONF_MEMORY_ENABLED,
+    CONF_MEMORY_SUMMARIZE,
     DOMAIN,
     DEFAULT_TITLE,
 )
@@ -182,7 +184,7 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
         ]
         # Exclude subagents from the same config entry as this subentry
         subagent_options: list[selector.SelectOptionDict] = _get_available_subagents(
-            self.hass, self._get_entry().entry_id
+            self.hass, self._get_reconfigure_subentry().subentry_id
         )
         _LOGGER.debug("tool_options: %s", tool_options)
         _LOGGER.debug("subagent_options: %s", subagent_options)
@@ -268,20 +270,31 @@ async def _options_schema_factory(
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
+            vol.Required(
+                CONF_MEMORY_ENABLED,
+                default=options.get(CONF_MEMORY_ENABLED, False),
+            ): bool,
+            vol.Required(
+                CONF_MEMORY_SUMMARIZE,
+                default=options.get(CONF_MEMORY_SUMMARIZE, False),
+            ): bool,
         }
     )
     return schema
 
 
 def _get_available_subagents(
-    hass: HomeAssistant, current_entry_id: str | None = None
+    hass: HomeAssistant, current_subentry_id: str | None = None
 ) -> list[selector.SelectOptionDict]:
     """Return a list of available subagents (LLM agents) from all google_adk config entries, excluding self."""
+    _LOGGER.debug("current_subentry_id: %s", current_subentry_id)
     options = []
     for entry in hass.config_entries.async_entries(DOMAIN):
-        if current_entry_id is not None and entry.entry_id == current_entry_id:
-            continue
+        _LOGGER.debug("entry: %s", entry)
         for subentry in entry.subentries.values():
+            _LOGGER.debug("subentry: %s", subentry)
+            if current_subentry_id is not None and subentry.subentry_id == current_subentry_id:
+                continue
             if subentry.subentry_type == "conversation":
                 options.append(
                     selector.SelectOptionDict(
