@@ -58,6 +58,8 @@ async def _transform_stream(
 ) -> AsyncGenerator[conversation.AssistantContentDeltaDict]:
     """Transform an OpenAI delta stream into HA format."""
     start = True
+    total_thinking_yielded = ""
+    total_text_yielded = ""
     try:
         async for event in result:
             _LOGGER.debug(
@@ -67,26 +69,63 @@ async def _transform_stream(
                 event.is_final_response(),
                 event.content,
             )
-            if event.is_final_response():
-                # Note: This may be pushing up a response from a single agent run
-                _LOGGER.info("Final response received")
-                if not event.partial:
-                    continue
 
-            if not event.content or not (response_parts := event.content.parts):
+            if event.is_final_response() and not event.partial:
                 continue
-            content_parts = [part.text for part in response_parts if part.text]
-            content = "".join(content_parts)
-            if not content:
-                _LOGGER.debug("Received empty content from event: %s", event)
-                continue
+
+            thinking_parts = []
+            text_parts = []
+            if event.content and (response_parts := event.content.parts):
+                for part in response_parts:
+                    if part.thought:
+                        if part.text:
+                            thinking_parts.append(part.text)
+                    elif part.function_call:
+                        call = part.function_call
+                        thinking_parts.append(
+                            f"[Calling tool: {call.name}({call.args})]"
+                        )
+                    elif part.function_response:
+                        resp = part.function_response
+                        thinking_parts.append(
+                            f"[Tool result: {resp.name} -> {resp.response}]"
+                        )
+                    elif part.text:
+                        text_parts.append(part.text)
+
+            current_thinking = "".join(thinking_parts)
+            current_text = "".join(text_parts)
 
             chunk: conversation.AssistantContentDeltaDict = {}
             if start:
                 chunk["role"] = "assistant"
                 start = False
-            chunk["content"] = content
-            yield chunk
+
+            # Extract deltas relative to total yielded so far in this stream
+            if current_thinking.startswith(total_thinking_yielded):
+                delta_thinking = current_thinking[len(total_thinking_yielded) :]
+            else:
+                delta_thinking = current_thinking
+
+            if delta_thinking:
+                chunk["thinking_content"] = delta_thinking
+                total_thinking_yielded += delta_thinking
+
+            if current_text.startswith(total_text_yielded):
+                delta_text = current_text[len(total_text_yielded) :]
+            else:
+                delta_text = current_text
+
+            if delta_text:
+                chunk["content"] = delta_text
+                total_text_yielded += delta_text
+
+            if (
+                chunk.get("content")
+                or chunk.get("thinking_content")
+                or chunk.get("role")
+            ):
+                yield chunk
     except (APIError, ValueError, HomeAssistantError) as err:
         _LOGGER.exception("Error sending message: %s %s", type(err), err)
         if isinstance(err, APIError):

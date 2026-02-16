@@ -414,3 +414,121 @@ async def test_tools_and_sub_agents(
     assert (
         result.response.as_dict()["speech"]["plain"]["speech"] == "Completed tool call."
     )
+
+
+@pytest.mark.parametrize("expected_lingering_tasks", [True])
+async def test_thoughts_and_tool_calls(
+    hass: HomeAssistant,
+    mock_send_message_stream: AsyncMock,
+) -> None:
+    """Test that thoughts and tool calls are captured in thinking_content."""
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Google ADK",
+        data={
+            CONF_API_KEY: "test_api_key",
+        },
+        subentries_data=[
+            {
+                "title": "assistant_agent",
+                "subentry_id": "ulid-assistant-conversation",
+                "subentry_type": "conversation",
+                "data": {
+                    CONF_MODEL: "gemini-2.5-flash",
+                    CONF_DESCRIPTION: "A helper agent that can answer users' questions.",
+                    CONF_INSTRUCTIONS: "You are an agent to help answer users' various questions.",
+                    CONF_TOOLS: ["assist"],
+                },
+            },
+        ],
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    messages = [
+        [
+            types.GenerateContentResponse(
+                candidates=[
+                    types.Candidate(
+                        content=types.Content(
+                            parts=[
+                                types.Part(
+                                    thought=True,
+                                    text="I should check the weather.",
+                                ),
+                            ],
+                            role="model",
+                        ),
+                    )
+                ],
+            ),
+            types.GenerateContentResponse(
+                candidates=[
+                    types.Candidate(
+                        content=types.Content(
+                            parts=[
+                                types.Part(
+                                    function_call=types.FunctionCall(
+                                        name="test_tool",
+                                        args={"param1": "test_value"},
+                                    ),
+                                ),
+                            ],
+                            role="model",
+                        ),
+                    )
+                ],
+            ),
+        ],
+        [
+            types.GenerateContentResponse(
+                candidates=[
+                    types.Candidate(
+                        content=types.Content(
+                            parts=[
+                                types.Part(
+                                    text="It is 20 degrees in San Francisco.",
+                                )
+                            ],
+                            role="model",
+                        ),
+                        finish_reason=types.FinishReason.STOP,
+                    )
+                ],
+            ),
+        ],
+    ]
+
+    mock_send_message_stream.return_value = messages
+
+    # We need to capture the deltas to check thinking_content
+    deltas = []
+
+    async def mock_delta_content_stream(agent_id, stream):
+        async for delta in stream:
+            deltas.append(delta)
+            yield delta
+
+    with patch(
+        "homeassistant.components.conversation.ChatLog.async_add_delta_content_stream",
+        side_effect=mock_delta_content_stream,
+    ):
+        await conversation.async_converse(
+            hass,
+            "What is the weather?",
+            None,
+            Context(),
+            agent_id=TEST_AGENT_ID,
+        )
+
+    # Check that thinking_content was present in the deltas
+    thought_deltas = [d for d in deltas if "thinking_content" in d]
+    assert len(thought_deltas) == 3
+    assert thought_deltas[0]["thinking_content"] == "I should check the weather."
+    assert "test_tool" in thought_deltas[1]["thinking_content"]
+    assert "Test response" in thought_deltas[2]["thinking_content"]
+
+    # Check final content
+    content_deltas = [d for d in deltas if "content" in d]
+    assert any("It is 20 degrees" in d["content"] for d in content_deltas)
