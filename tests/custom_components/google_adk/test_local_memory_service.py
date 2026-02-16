@@ -51,7 +51,11 @@ async def test_memory_service_save_load(hass: HomeAssistant) -> None:
         )
 
         assert len(response.memories) == 1
-        assert response.memories[0].content.parts[0].text == "I love apples."
+        memory = response.memories[0]
+        assert memory.content is not None
+        assert memory.content.parts is not None
+        assert len(memory.content.parts) > 0
+        assert memory.content.parts[0].text == "I love apples."
 
 
 async def test_memory_service_search(hass: HomeAssistant) -> None:
@@ -93,14 +97,24 @@ async def test_memory_service_search(hass: HomeAssistant) -> None:
             app_name="app", user_id="user", query="cat"
         )
         assert len(response.memories) == 1
-        assert "cat" in response.memories[0].content.parts[0].text
+        memory = response.memories[0]
+        assert memory.content is not None
+        assert memory.content.parts is not None
+        assert len(memory.content.parts) > 0
+        assert (text := memory.content.parts[0].text) is not None
+        assert "cat" in text
 
         # Search for "dogs"
         response = await service.search_memory(
             app_name="app", user_id="user", query="dogs"
         )
         assert len(response.memories) == 1
-        assert "dogs" in response.memories[0].content.parts[0].text
+        memory = response.memories[0]
+        assert memory.content is not None
+        assert memory.content.parts is not None
+        assert len(memory.content.parts) > 0
+        assert (text := memory.content.parts[0].text) is not None
+        assert "dogs" in text
 
         # Search for something unrelated
         response = await service.search_memory(
@@ -187,7 +201,12 @@ async def test_memory_service_numeric_search(hass: HomeAssistant) -> None:
             app_name="app", user_id="user", query="123456"
         )
         assert len(response.memories) == 1
-        assert "123456" in response.memories[0].content.parts[0].text
+        memory = response.memories[0]
+        assert memory.content is not None
+        assert memory.content.parts is not None
+        assert len(memory.content.parts) > 0
+        assert (text := memory.content.parts[0].text) is not None
+        assert "123456" in text
 
 
 async def test_memory_service_background_summarization(hass: HomeAssistant) -> None:

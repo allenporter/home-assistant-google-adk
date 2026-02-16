@@ -265,6 +265,8 @@ async def test_reconfigure_subentry_invalid_tools(
     assert result["step_id"] == "set_options"
 
     # Only valid tools should be suggested
-    schema = result["data_schema"].schema
+    data_schema = result["data_schema"]
+    assert data_schema is not None
+    schema = data_schema.schema
     key = next(k for k in schema if k == CONF_TOOLS)
     assert key.default() == expected_suggested

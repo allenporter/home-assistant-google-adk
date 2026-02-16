@@ -122,7 +122,7 @@ class GoogleAdkConversationEntity(
             model=f"Google ADK Agent {subentry.title}",
             entry_type=dr.DeviceEntryType.SERVICE,
         )
-        self._session_service = InMemorySessionService()  # type: ignore[no-untyped-call]
+        self._session_service = InMemorySessionService()
         self._memory_service: LocalFileMemoryService | None = None
 
     @property
@@ -197,7 +197,7 @@ class GoogleAdkConversationEntity(
                 chat_log.content[-1],
             )
             raise HomeAssistantError(_ERROR_GETTING_RESPONSE)
-        intent_response.async_set_speech(chat_log.content[-1].content or "")  # type: ignore[possibly-missing-attribute]
+        intent_response.async_set_speech(chat_log.content[-1].content or "")
         return conversation.ConversationResult(
             response=intent_response,
             conversation_id=chat_log.conversation_id,
