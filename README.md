@@ -55,7 +55,7 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     - **Tools (optional)**: Select one or more tools that the agent can use to interact with Home Assistant entities or services. Tools extend the agent's capabilities beyond conversation, enabling it to take actions in your smart home.
     - **Subagents (optional)**: Select one or more other Google ADK agents (subagents) that this agent can delegate tasks to. Subagents allow you to build complex, multi-agent workflows by composing specialized agents together. Subagents are referenced by their unique subentry ID and can be from any other Google ADK config entry.
     - **Memory Enabled (optional)**: When enabled, the agent will store and retrieve information from past conversations. Memory is isolated per agent.
-    - **Summarize Memory (optional)**: When enabled, each conversation session will be summarized, helping to maintain a focused and concise conversational history.
+    - **Summarize Memory (optional)**: When enabled, the conversation history will be summarized periodically in the background (every 25 turns) to maintain a focused and concise conversational history without blocking the user.
 
 ## Usage
 
@@ -81,8 +81,8 @@ The Google ADK integration supports persistent memory, allowing agents to retain
 
 - **Isolation**: Memory is strictly isolated per agent subentry. Information remembered by one agent will not be accessible by others unless explicitly shared.
 - **Storage**: Memories are stored locally in your Home Assistant configuration directory under `.storage/google_adk.memory.<subentry_id>`.
-- **Retrieval**: When memory is enabled, the agent automatically searches for relevant past information based on your current query and incorporates it into its context.
-- **Summarization**: To prevent memory from becoming too cluttered, you can enable summarization. This will use the Gemini model to distill the key facts from each session before they are added to the agent's persistent memory.
+- **Retrieval**: When memory is enabled, the agent automatically searches for relevant past information from both history and summaries based on your current query.
+- **Summarization**: When enabled, the agent records the full conversation history. Every 50 "turns" (messages), a non-blocking background task is triggered to distill the historical context into a concise summary. This ensures the agent's long-term memory remains efficient while preserving the fine-grained details of recent interactions.
 
 ## Future Work
 

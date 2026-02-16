@@ -183,8 +183,11 @@ class LLMSubentryFlowHandler(ConfigSubentryFlow):
             for api in llm.async_get_apis(self.hass)
         ]
         # Exclude subagents from the same config entry as this subentry
+        current_subentry_id = None
+        if not self._is_new:
+            current_subentry_id = self._get_reconfigure_subentry().subentry_id
         subagent_options: list[selector.SelectOptionDict] = _get_available_subagents(
-            self.hass, self._get_reconfigure_subentry().subentry_id
+            self.hass, current_subentry_id
         )
         _LOGGER.debug("tool_options: %s", tool_options)
         _LOGGER.debug("subagent_options: %s", subagent_options)

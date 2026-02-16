@@ -151,7 +151,7 @@ class GoogleAdkConversationEntity(
 
         self._memory_service = LocalFileMemoryService(
             self.hass,
-            storage_key=f"{DOMAIN}.memory.{self._subentry.subentry_id}",
+            storage_key=f"{DOMAIN}/memory.{self._subentry.subentry_id}",
             summarize=summarize,
             client=client,
             model_id=model_id,

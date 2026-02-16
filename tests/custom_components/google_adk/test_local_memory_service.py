@@ -155,3 +155,98 @@ async def test_memory_service_isolation(hass: HomeAssistant) -> None:
             app_name="app", user_id="user", query="1234"
         )
         assert len(response2.memories) == 0
+
+
+async def test_memory_service_numeric_search(hass: HomeAssistant) -> None:
+    """Test searching for numbers in memory."""
+    with patch(
+        "custom_components.google_adk.local_memory_service.Store"
+    ) as mock_store_cls:
+        mock_store = mock_store_cls.return_value
+        mock_store.async_load = AsyncMock(return_value=None)
+        mock_store.async_save = AsyncMock()
+
+        service = LocalFileMemoryService(hass)
+
+        session = Session(
+            id="s1",
+            app_name="app",
+            user_id="user",
+            events=[
+                Event(
+                    author="user",
+                    content=Content(parts=[Part(text="My phone is 123456.")]),
+                )
+            ],
+        )
+
+        await service.add_session_to_memory(session)
+
+        # Search for "123456"
+        response = await service.search_memory(
+            app_name="app", user_id="user", query="123456"
+        )
+        assert len(response.memories) == 1
+        assert "123456" in response.memories[0].content.parts[0].text
+
+
+async def test_memory_service_background_summarization(hass: HomeAssistant) -> None:
+    """Test background summarization when threshold is reached."""
+    with patch(
+        "custom_components.google_adk.local_memory_service.Store"
+    ) as mock_store_cls:
+        mock_store = mock_store_cls.return_value
+        mock_store.async_load = AsyncMock(return_value=None)
+        mock_store.async_save = AsyncMock()
+
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.text = "This is a summary."
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+
+        service = LocalFileMemoryService(
+            hass, summarize=True, client=mock_client, model_id="test-model"
+        )
+
+        # Add 24 messages (turns)
+        events = []
+        for i in range(24):
+            events.append(
+                Event(author="user", content=Content(parts=[Part(text=f"Turn {i}")]))
+            )
+        
+        session = Session(
+            id="session1",
+            app_name="app",
+            user_id="user",
+            events=events,
+        )
+
+        await service.add_session_to_memory(session)
+        mock_client.aio.models.generate_content.assert_not_called()
+
+        # Add 1 more message to hit the threshold (25)
+        session2 = Session(
+            id="session2",
+            app_name="app",
+            user_id="user",
+            events=[Event(author="user", content=Content(parts=[Part(text="Final turn")]))],
+        )
+
+        await service.add_session_to_memory(session2)
+
+        # Wait for background task
+        await hass.async_block_till_done()
+
+        # Verify summarization was called
+        mock_client.aio.models.generate_content.assert_called_once()
+        
+        # Verify summary is in storage
+        saved_data = mock_store.async_save.call_args[0][0]
+        user_data = saved_data["app/user"]
+        assert "__summaries__" in user_data
+        assert "Memory Summary: This is a summary." in user_data["__summaries__"][0]["content"]["parts"][0]["text"]
+        
+        # Verify history is preserved
+        assert "session1" in user_data
+        assert "session2" in user_data
