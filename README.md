@@ -7,6 +7,8 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
 - **Conversational Agent**: Chat with Gemini models via Home Assistant's Assist interface.
 - **Configurable Models**: Choose your preferred Gemini model (e.g., `gemini-3-flash-preview`).
 - **Custom Instructions**: Define the persona and instructions for your agent.
+- **Persistent Memory**: Agents can remember past conversations to provide more relevant and personalized responses.
+- **Memory Summarization**: Optional summarization of past sessions to keep context concise and relevant.
 
 ## Installation
 
@@ -52,6 +54,8 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     - **Instructions**: The core personality and rules for the agent. This defines how the agent should behave, what tone it should use, and any specific constraints. You can use Home Assistant templates here to inject dynamic context.
     - **Tools (optional)**: Select one or more tools that the agent can use to interact with Home Assistant entities or services. Tools extend the agent's capabilities beyond conversation, enabling it to take actions in your smart home.
     - **Subagents (optional)**: Select one or more other Google ADK agents (subagents) that this agent can delegate tasks to. Subagents allow you to build complex, multi-agent workflows by composing specialized agents together. Subagents are referenced by their unique subentry ID and can be from any other Google ADK config entry.
+    - **Memory Enabled (optional)**: When enabled, the agent will store and retrieve information from past conversations. Memory is isolated per agent.
+    - **Summarize Memory (optional)**: When enabled, each conversation session will be summarized, helping to maintain a focused and concise conversational history.
 
 ## Usage
 
@@ -69,22 +73,24 @@ Tools allow your agent to interact with Home Assistant entities and call service
 
 Subagents enable advanced multi-agent workflows. You can optionally select one or more other Google ADK agents as subagents for your agent. This allows your agent to delegate tasks to specialized subagents, enabling more modular and scalable assistant designs. Subagents are referenced by their unique subentry ID and can be selected from any existing Google ADK agent configuration. If no subagents are selected, the agent will operate independently.
 
+## Memory and Sessions
+
+The Google ADK integration supports persistent memory, allowing agents to retain information from previous interactions.
+
+### How it Works
+
+- **Isolation**: Memory is strictly isolated per agent subentry. Information remembered by one agent will not be accessible by others unless explicitly shared.
+- **Storage**: Memories are stored locally in your Home Assistant configuration directory under `.storage/google_adk.memory.<subentry_id>`.
+- **Retrieval**: When memory is enabled, the agent automatically searches for relevant past information based on your current query and incorporates it into its context.
+- **Summarization**: To prevent memory from becoming too cluttered, you can enable summarization. This will use the Gemini model to distill the key facts from each session before they are added to the agent's persistent memory.
+
 ## Future Work
 
 The following advanced ADK features are planned for future development:
 
 1. **Planner support**: Integrate ADK's planning capabilities for LLM agents.
 2. **Expose agent thinking**: Make intermediate agent reasoning/thoughts visible in Home Assistant, with configuration options to enable/disable or control visibility.
-3. **Sessions and memory**: Support ADK session and memory APIs. The question of session/memory interop with Home Assistant is left open for future exploration.
-4. **Persistent memory and storage**: Design persistent memory for agents (distinct from session memory), with configuration options for enabling and selecting storage backends.
-5. **Memory ingestion strategies**: Implement memory ingestion (e.g., update memory every X turns or on-demand), referencing advanced ADK concepts.
-6. **Expose memory tools**: Provide tools for agents to interact with memory (read/write/query), and consider supporting multiple memory stores (e.g., per-agent memory as a configurable option).
 
-### Further Considerations
-
-1. Memory will be isolated per agent by default.
-2. Configuration and options flow will be used to manage these features.
-3. UI/UX and privacy/performance tradeoffs for memory/session data will be considered as features are designed.
 
 ## Development
 
