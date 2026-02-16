@@ -2,12 +2,11 @@
 
 This is a custom component for Home Assistant that integrates the [Google Agent Development Kit (ADK)](https://google.github.io/adk-docs/). It allows you to create conversational agents powered by Google's Gemini models directly within Home Assistant.
 
-<p align="center">
-  <img src="static/agent-conversation.png" width="400" alt="Agent Conversation" />
-  <img src="static/agent-memory-recall.png" width="400" alt="Memory Recall" />
-</p>
+|                                Agent Conversation                                |                                Memory Recall                                 |
+| :------------------------------------------------------------------------------: | :--------------------------------------------------------------------------: |
+| <img src="static/agent-conversation.png" width="400" alt="Agent Conversation" /> | <img src="static/agent-memory-recall.png" width="400" alt="Memory Recall" /> |
 
-*Left: The agent discussing cats and mentioning subagents. Right: The agent recalling that information in a later conversation.*
+_Left: The agent discussing cats and mentioning subagents. Right: The agent recalling that information in a later conversation._
 
 ## Features
 
@@ -54,7 +53,6 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     When creating or editing an agent, you can configure the following fields. These settings are crucial for defining the agent's identity and behavior, especially as you expand to multi-agent systems. See [Defining the Agent's Identity and Purpose](https://google.github.io/adk-docs/agents/llm-agents/#defining-the-agents-identity-and-purpose) in the ADK documentation for more details.
 
     <img src="static/config-flow-agent-memory.png" width="400" alt="Config Flow Screenshot" />
-
 
     - **Name**: A unique identifier for the agent (e.g., `kitchen_assistant`). This is used internally and by other agents to reference this agent.
     - **Model**: The Gemini model to use (e.g., `gemini-3-flash-preview`). Different models offer different trade-offs between speed, cost, and capability.
