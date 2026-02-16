@@ -38,7 +38,7 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
     - Click **Add Integration** and search for **Google ADK**.
     - Enter your **API Key**.
 
-    ![Config Flow Screenshot](docs/images/config_flow.png)
+    ![Config Flow Screenshot](static/config-flow-agent-memory.png)
 
 3.  **Configure Agent**:
 
@@ -63,6 +63,8 @@ This is a custom component for Home Assistant that integrates the [Google Agent 
 2.  Select the **Google ADK** agent from the dropdown.
 3.  Start chatting!
 
+![Agent Conversation](static/agent-conversation.png)
+
 ## Tools and Subagents
 
 ### Tools
@@ -82,7 +84,9 @@ The Google ADK integration supports persistent memory, allowing agents to retain
 - **Isolation**: Memory is strictly isolated per agent subentry. Information remembered by one agent will not be accessible by others unless explicitly shared.
 - **Storage**: Memories are stored locally in your Home Assistant configuration directory under `.storage/google_adk.memory.<subentry_id>`.
 - **Retrieval**: When memory is enabled, the agent automatically searches for relevant past information from both history and summaries based on your current query.
-- **Summarization**: When enabled, the agent records the full conversation history. Every 50 "turns" (messages), a non-blocking background task is triggered to distill the historical context into a concise summary. This ensures the agent's long-term memory remains efficient while preserving the fine-grained details of recent interactions.
+- **Summarization**: When enabled, the agent records the full conversation history. Every 25 "turns" (messages), a non-blocking background task is triggered to distill the historical context into a concise summary. This ensures the agent's long-term memory remains efficient while preserving the fine-grained details of recent interactions.
+
+![Memory Recall](static/agent-memory-recall.png)
 
 ## Future Work
 
