@@ -41,7 +41,6 @@ async def async_create(
     _LOGGER.debug("Registering Google ADK agent '%s'", subentry.title)
     tools: list[BaseTool] = await _async_create_tools(hass, subentry, llm_context)
     sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
-    sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
 
     memory_enabled = subentry.data.get(CONF_MEMORY_ENABLED, False)
     if memory_enabled:
