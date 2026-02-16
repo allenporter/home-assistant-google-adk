@@ -197,7 +197,7 @@ class GoogleAdkConversationEntity(
                 chat_log.content[-1],
             )
             raise HomeAssistantError(_ERROR_GETTING_RESPONSE)
-        intent_response.async_set_speech(chat_log.content[-1].content or "")
+        intent_response.async_set_speech(chat_log.content[-1].content or "")  # type: ignore[possibly-missing-attribute]
         return conversation.ConversationResult(
             response=intent_response,
             conversation_id=chat_log.conversation_id,
