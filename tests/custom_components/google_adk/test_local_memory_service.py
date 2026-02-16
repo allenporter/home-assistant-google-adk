@@ -214,7 +214,7 @@ async def test_memory_service_background_summarization(hass: HomeAssistant) -> N
             events.append(
                 Event(author="user", content=Content(parts=[Part(text=f"Turn {i}")]))
             )
-        
+
         session = Session(
             id="session1",
             app_name="app",
@@ -230,7 +230,9 @@ async def test_memory_service_background_summarization(hass: HomeAssistant) -> N
             id="session2",
             app_name="app",
             user_id="user",
-            events=[Event(author="user", content=Content(parts=[Part(text="Final turn")]))],
+            events=[
+                Event(author="user", content=Content(parts=[Part(text="Final turn")]))
+            ],
         )
 
         await service.add_session_to_memory(session2)
@@ -240,13 +242,16 @@ async def test_memory_service_background_summarization(hass: HomeAssistant) -> N
 
         # Verify summarization was called
         mock_client.aio.models.generate_content.assert_called_once()
-        
+
         # Verify summary is in storage
         saved_data = mock_store.async_save.call_args[0][0]
         user_data = saved_data["app/user"]
         assert "__summaries__" in user_data
-        assert "Memory Summary: This is a summary." in user_data["__summaries__"][0]["content"]["parts"][0]["text"]
-        
+        assert (
+            "Memory Summary: This is a summary."
+            in user_data["__summaries__"][0]["content"]["parts"][0]["text"]
+        )
+
         # Verify history is preserved
         assert "session1" in user_data
         assert "session2" in user_data

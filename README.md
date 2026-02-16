@@ -95,7 +95,6 @@ The following advanced ADK features are planned for future development:
 1. **Planner support**: Integrate ADK's planning capabilities for LLM agents.
 2. **Expose agent thinking**: Make intermediate agent reasoning/thoughts visible in Home Assistant, with configuration options to enable/disable or control visibility.
 
-
 ## Development
 
 To set up the development environment:

@@ -14,7 +14,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from google import genai
-from google.adk.events.event import Event
 from google.adk.memory.base_memory_service import (
     BaseMemoryService,
     SearchMemoryResponse,
@@ -88,16 +87,16 @@ class LocalFileMemoryService(BaseMemoryService):
             return
 
         user_key = _user_key(app_name, user_id)
-        
+
         # Avoid concurrent summarization for the same user
         async with self._summarizing_lock:
             await self._async_load()
             user_data = self._session_events.get(user_key, {})
             metadata = user_data.get(METADATA_KEY, {})
-            
+
             last_summarized_count = metadata.get("last_summarized_turn_count", 0)
             total_turns = metadata.get("total_turns", 0)
-            
+
             if total_turns - last_summarized_count < SUMMARIZATION_THRESHOLD:
                 return
 
@@ -106,11 +105,15 @@ class LocalFileMemoryService(BaseMemoryService):
             # Get existing summaries
             summaries = user_data.get(SUMMARIES_KEY, [])
             for summary in summaries:
-                 if summary_text := summary.get("content", {}).get("parts", [{}])[0].get("text"):
-                     transcript += f"Previous Summary: {summary_text}\n"
+                if (
+                    summary_text := summary.get("content", {})
+                    .get("parts", [{}])[0]
+                    .get("text")
+                ):
+                    transcript += f"Previous Summary: {summary_text}\n"
 
             # Get new sessions since last summary
-            # Note: This is an approximation since we don't have per-event turn counts easily without 
+            # Note: This is an approximation since we don't have per-event turn counts easily without
             # more complex metadata. For now, we'll just take all sessions.
             # In a more advanced version, we'd track which sessions are already summarized.
             for session_id, events in user_data.items():
@@ -134,7 +137,7 @@ class LocalFileMemoryService(BaseMemoryService):
                 summary_text = response.text
 
                 # Update summaries (we replace or append? User said "summarize every 50 turns")
-                # Usually we want to keep it condensed, so we might replace the old summary with a new one 
+                # Usually we want to keep it condensed, so we might replace the old summary with a new one
                 # that includes the old summary's context + new events.
                 new_summary_event = {
                     "timestamp": datetime.now().isoformat(),
@@ -144,13 +147,13 @@ class LocalFileMemoryService(BaseMemoryService):
                         "parts": [{"text": f"Memory Summary: {summary_text}"}],
                     },
                 }
-                
+
                 # For now, let's keep it simple: replace previous summaries with the new one
                 # to keep memory usage low, since the new summary should incorporate the old one.
                 user_data[SUMMARIES_KEY] = [new_summary_event]
                 metadata["last_summarized_turn_count"] = total_turns
                 user_data[METADATA_KEY] = metadata
-                
+
                 await self._store.async_save(self._session_events)
                 _LOGGER.debug("Background summarization complete for user: %s", user_id)
             except Exception as e:
@@ -194,7 +197,7 @@ class LocalFileMemoryService(BaseMemoryService):
                 self._session_events[user_key] = {}
             user_data = self._session_events[user_key]
             user_data[session.id] = serializable_events
-            
+
             # Update turn count metadata
             metadata = user_data.get(METADATA_KEY, {})
             total_turns = metadata.get("total_turns", 0) + new_turns
@@ -205,10 +208,7 @@ class LocalFileMemoryService(BaseMemoryService):
 
         # Check for background summarization
         last_summarized = metadata.get("last_summarized_turn_count", 0)
-        if (
-            self._summarize 
-            and total_turns - last_summarized >= SUMMARIZATION_THRESHOLD
-        ):
+        if self._summarize and total_turns - last_summarized >= SUMMARIZATION_THRESHOLD:
             self._hass.async_create_task(
                 self._async_background_summarize(session.app_name, session.user_id)
             )

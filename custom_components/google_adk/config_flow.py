@@ -296,7 +296,10 @@ def _get_available_subagents(
         _LOGGER.debug("entry: %s", entry)
         for subentry in entry.subentries.values():
             _LOGGER.debug("subentry: %s", subentry)
-            if current_subentry_id is not None and subentry.subentry_id == current_subentry_id:
+            if (
+                current_subentry_id is not None
+                and subentry.subentry_id == current_subentry_id
+            ):
                 continue
             if subentry.subentry_type == "conversation":
                 options.append(
