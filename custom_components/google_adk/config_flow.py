@@ -32,6 +32,7 @@ from .const import (
     CONF_SUB_AGENTS,
     CONF_MEMORY_ENABLED,
     CONF_MEMORY_SUMMARIZE,
+    CONF_USE_INTERACTIONS_API,
     DOMAIN,
     DEFAULT_TITLE,
 )
@@ -280,6 +281,10 @@ async def _options_schema_factory(
             vol.Required(
                 CONF_MEMORY_SUMMARIZE,
                 default=options.get(CONF_MEMORY_SUMMARIZE, False),
+            ): bool,
+            vol.Required(
+                CONF_USE_INTERACTIONS_API,
+                default=options.get(CONF_USE_INTERACTIONS_API, False),
             ): bool,
         }
     )
