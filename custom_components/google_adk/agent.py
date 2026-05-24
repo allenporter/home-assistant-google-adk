@@ -9,6 +9,7 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 from google.adk.agents import BaseAgent, LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.models.google_llm import Gemini
 from google.genai.types import (
     FunctionDeclaration,
     Schema,
@@ -28,10 +29,26 @@ from .const import (
     CONF_DESCRIPTION,
     DOMAIN,
     CONF_MEMORY_ENABLED,
+    CONF_USE_INTERACTIONS_API,
 )
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _to_json_schema(schema: Any) -> Any:
+    """Recursively lowercase type fields to produce valid JSON Schema from a Gemini schema dict."""
+    if isinstance(schema, dict):
+        return {
+            k: v.lower() if k == "type" and isinstance(v, str) else _to_json_schema(v)
+            for k, v in schema.items()
+        }
+    if isinstance(schema, list):
+        return [_to_json_schema(item) for item in schema]
+    return schema
+
+
+_EMPTY_JSON_SCHEMA: dict[str, Any] = {"type": "object", "properties": {}}
 
 
 async def async_create(
@@ -39,16 +56,25 @@ async def async_create(
 ) -> BaseAgent:
     """Register all agents using the agent framework."""
     _LOGGER.debug("Registering Google ADK agent '%s'", subentry.title)
-    tools: list[BaseTool] = await _async_create_tools(hass, subentry, llm_context)
+    use_interactions_api = subentry.data.get(CONF_USE_INTERACTIONS_API, False)
+    tools: list[BaseTool] = await _async_create_tools(
+        hass, subentry, llm_context, use_interactions_api=use_interactions_api
+    )
     sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
 
     memory_enabled = subentry.data.get(CONF_MEMORY_ENABLED, False)
     if memory_enabled:
         tools.append(PreloadMemoryTool())
 
+    model_name = subentry.data[CONF_MODEL]
+    if use_interactions_api:
+        model = Gemini(model=model_name, use_interactions_api=True)
+    else:
+        model = model_name
+
     agent = LlmAgent(
         name=slugify(subentry.title, separator="_"),
-        model=subentry.data[CONF_MODEL],
+        model=model,
         description=subentry.data[CONF_DESCRIPTION],
         instruction=subentry.data[CONF_INSTRUCTIONS],
         tools=tools,  # type: ignore[invalid-argument-type]
@@ -163,12 +189,17 @@ class AdkLlmTool(BaseTool):
     """Home Assistant Tool wrapper."""
 
     def __init__(
-        self, llm_api: llm.APIInstance, tool: llm.Tool, hass: HomeAssistant
+        self,
+        llm_api: llm.APIInstance,
+        tool: llm.Tool,
+        hass: HomeAssistant,
+        use_interactions_api: bool = False,
     ) -> None:
         """Initialize the Home Assistant Tool."""
         super().__init__(name=tool.name, description=tool.description)
         self._llm_api = llm_api
         self._llm_tool = tool
+        self._use_interactions_api = use_interactions_api
         if tool.parameters.schema:
             self._parameters = _format_schema(convert(tool.parameters))
         else:
@@ -176,6 +207,21 @@ class AdkLlmTool(BaseTool):
 
     def _get_declaration(self) -> Optional[FunctionDeclaration]:
         """Gets the OpenAPI specification of this tool in the form of a FunctionDeclaration."""
+        if self._use_interactions_api:
+            # The Interactions API requires JSON Schema (lowercase types) and always
+            # needs a parameters field. Use parameters_json_schema to bypass the
+            # Gemini Schema model_dump which produces uppercase types (STRING, OBJECT, etc.)
+            # that the Interactions API rejects.
+            json_schema = (
+                _to_json_schema(self._parameters)
+                if self._parameters is not None
+                else _EMPTY_JSON_SCHEMA
+            )
+            return FunctionDeclaration(
+                name=self.name,
+                description=self.description,
+                parameters_json_schema=json_schema,
+            )
         return FunctionDeclaration(
             name=self.name,
             description=self.description,
@@ -197,13 +243,16 @@ async def _async_create_tools(
     hass: HomeAssistant,
     subentry: ConfigSubentry,
     llm_context: llm.LLMContext,
+    use_interactions_api: bool = False,
 ) -> list[BaseTool]:
     """Create tools for a given agent subentry."""
     tools = []
     if subentry.data.get("tools"):
         llm_api = await llm.async_get_api(hass, subentry.data["tools"], llm_context)
         for tool in llm_api.tools:
-            tools.append(AdkLlmTool(llm_api, tool, hass))
+            tools.append(
+                AdkLlmTool(llm_api, tool, hass, use_interactions_api=use_interactions_api)
+            )
     return tools
 
 
