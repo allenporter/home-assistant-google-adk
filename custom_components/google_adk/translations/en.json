@@ -57,7 +57,8 @@
             "tools": "Tools",
             "sub_agents": "Sub-agents",
             "memory_enabled": "Memory Enabled",
-            "memory_summarize": "Summarize Memory"
+            "memory_summarize": "Summarize Memory",
+            "use_interactions_api": "Use Server Side Agents"
           },
           "data_description": {
             "name": "A unique identifier for the agent (e.g., `kitchen_assistant`). This is used internally and by other agents to reference this agent.",
@@ -67,7 +68,8 @@
             "tools": "Select one or more Home Assistant APIs to expose as tools for this agent. If none are selected, the agent will not have access to any tool calls.",
             "sub_agents": "Optionally select other conversation agents to register as sub-agents. This allows the agent to delegate tasks to specialized agents when appropriate.",
             "memory_enabled": "Enable memory for this agent. The agent will remember past conversations and use them to provide more relevant responses.",
-            "memory_summarize": "Summarize memory for this agent. The agent will summarize past conversations and use them to provide more relevant responses."
+            "memory_summarize": "Summarize memory for this agent. The agent will summarize past conversations and use them to provide more relevant responses.",
+            "use_interactions_api": "Use server side agents via the Interactions API. This enables server-side state management and access to Gemini agents like Deep Research. Requires a Gemini model (e.g., `gemini-2.5-flash`)."
           }
         }
       },

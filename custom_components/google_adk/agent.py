@@ -9,6 +9,7 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 from google.adk.agents import BaseAgent, LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.models.google_llm import Gemini
 from google.genai.types import (
     FunctionDeclaration,
     Schema,
@@ -28,6 +29,7 @@ from .const import (
     CONF_DESCRIPTION,
     DOMAIN,
     CONF_MEMORY_ENABLED,
+    CONF_USE_INTERACTIONS_API,
 )
 
 
@@ -46,9 +48,16 @@ async def async_create(
     if memory_enabled:
         tools.append(PreloadMemoryTool())
 
+    use_interactions_api = subentry.data.get(CONF_USE_INTERACTIONS_API, False)
+    model_name = subentry.data[CONF_MODEL]
+    if use_interactions_api:
+        model = Gemini(model=model_name, use_interactions_api=True)
+    else:
+        model = model_name
+
     agent = LlmAgent(
         name=slugify(subentry.title, separator="_"),
-        model=subentry.data[CONF_MODEL],
+        model=model,
         description=subentry.data[CONF_DESCRIPTION],
         instruction=subentry.data[CONF_INSTRUCTIONS],
         tools=tools,  # type: ignore[invalid-argument-type]
