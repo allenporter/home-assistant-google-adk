@@ -24,6 +24,7 @@ from custom_components.google_adk.const import (
     CONF_SUB_AGENTS,
     CONF_MEMORY_ENABLED,
     CONF_MEMORY_SUMMARIZE,
+    CONF_USE_INTERACTIONS_API,
 )
 
 
@@ -83,6 +84,7 @@ async def test_conversation_agent_subentry(
                     CONF_TOOLS: ["assist"],
                     CONF_MEMORY_ENABLED: False,
                     CONF_MEMORY_SUMMARIZE: False,
+                    CONF_USE_INTERACTIONS_API: False,
                 }
             ),
         )
@@ -98,6 +100,7 @@ async def test_conversation_agent_subentry(
         CONF_SUB_AGENTS: [],
         CONF_MEMORY_ENABLED: False,
         CONF_MEMORY_SUMMARIZE: False,
+        CONF_USE_INTERACTIONS_API: False,
     }
     assert len(config_entry.subentries) == 2
 
@@ -114,6 +117,7 @@ async def test_conversation_agent_subentry(
         CONF_SUB_AGENTS: [],
         CONF_MEMORY_ENABLED: False,
         CONF_MEMORY_SUMMARIZE: False,
+        CONF_USE_INTERACTIONS_API: False,
     }
 
     assert len(mock_setup.mock_calls) == 1
@@ -156,6 +160,7 @@ async def test_subentry_options_reconfiguration(
                 CONF_INSTRUCTIONS: "Updated instructions.",
                 CONF_MEMORY_ENABLED: False,
                 CONF_MEMORY_SUMMARIZE: False,
+                CONF_USE_INTERACTIONS_API: False,
             },
         )
         await hass.async_block_till_done()
@@ -173,6 +178,7 @@ async def test_subentry_options_reconfiguration(
         CONF_SUB_AGENTS: [],
         CONF_MEMORY_ENABLED: False,
         CONF_MEMORY_SUMMARIZE: False,
+        CONF_USE_INTERACTIONS_API: False,
     }
 
 
