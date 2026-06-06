@@ -57,7 +57,7 @@ async def async_create(
     """Register all agents using the agent framework."""
     _LOGGER.debug("Registering Google ADK agent '%s'", subentry.title)
     use_interactions_api = subentry.data.get(CONF_USE_INTERACTIONS_API, False)
-    tools: list[BaseTool] = await _async_create_tools(
+    tools: list[Any] = await _async_create_tools(
         hass, subentry, llm_context, use_interactions_api=use_interactions_api
     )
     sub_agents = await _async_create_sub_agents(hass, subentry, llm_context)
@@ -77,7 +77,7 @@ async def async_create(
         model=model,
         description=subentry.data[CONF_DESCRIPTION],
         instruction=subentry.data[CONF_INSTRUCTIONS],
-        tools=tools,  # type: ignore[invalid-argument-type]
+        tools=tools,
         sub_agents=sub_agents,
     )
 
