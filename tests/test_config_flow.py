@@ -73,9 +73,10 @@ async def test_conversation_agent_subentry(
     with patch(
         f"custom_components.{DOMAIN}.async_setup_entry", return_value=True
     ) as mock_setup:
+        assert result["data_schema"] is not None
         result2 = await hass.config_entries.subentries.async_configure(
             result["flow_id"],
-            result["data_schema"](  # type: ignore[call-non-callable]
+            result["data_schema"](
                 {
                     CONF_NAME: "assistant_agent",
                     CONF_MODEL: "gemini-2.5-flash",
@@ -139,7 +140,8 @@ async def test_subentry_options_reconfiguration(
 
     # Check that the form is pre-filled with the current options
     schema = options_flow["data_schema"]
-    defaults = schema({})  # type: ignore[misc]
+    assert schema is not None
+    defaults = schema({})
     assert defaults[CONF_MODEL] == "gemini-2.5-flash"
     assert (
         defaults[CONF_DESCRIPTION] == "A helper agent that can answer users' questions."
