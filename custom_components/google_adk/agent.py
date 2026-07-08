@@ -251,7 +251,9 @@ async def _async_create_tools(
         llm_api = await llm.async_get_api(hass, subentry.data["tools"], llm_context)
         for tool in llm_api.tools:
             tools.append(
-                AdkLlmTool(llm_api, tool, hass, use_interactions_api=use_interactions_api)
+                AdkLlmTool(
+                    llm_api, tool, hass, use_interactions_api=use_interactions_api
+                )
             )
     return tools
 
