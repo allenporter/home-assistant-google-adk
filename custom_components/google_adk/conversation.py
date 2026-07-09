@@ -58,8 +58,6 @@ async def _transform_stream(
 ) -> AsyncGenerator[conversation.AssistantContentDeltaDict]:
     """Transform an OpenAI delta stream into HA format."""
     start = True
-    total_thinking_yielded = ""
-    total_text_yielded = ""
     try:
         async for event in result:
             _LOGGER.debug(
@@ -69,63 +67,34 @@ async def _transform_stream(
                 event.is_final_response(),
                 event.content,
             )
+            if event.is_final_response():
+                # Note: This may be pushing up a response from a single agent run
+                _LOGGER.info("Final response received")
+                if not event.partial:
+                    continue
 
-            if event.is_final_response() and not event.partial:
+            if not event.content or not (response_parts := event.content.parts):
                 continue
-
-            thinking_parts = []
-            text_parts = []
-            if event.content and (response_parts := event.content.parts):
-                for part in response_parts:
-                    if part.thought:
-                        if part.text:
-                            thinking_parts.append(part.text)
-                    elif part.function_call:
-                        call = part.function_call
-                        thinking_parts.append(
-                            f"[Calling tool: {call.name}({call.args})]"
-                        )
-                    elif part.function_response:
-                        resp = part.function_response
-                        thinking_parts.append(
-                            f"[Tool result: {resp.name} -> {resp.response}]"
-                        )
-                    elif part.text:
-                        text_parts.append(part.text)
-
-            current_thinking = "".join(thinking_parts)
-            current_text = "".join(text_parts)
+            
+            content_parts = []
+            for part in response_parts:
+                try:
+                    if part.text:
+                        content_parts.append(part.text)
+                except Exception:
+                    pass
+                    
+            content = "".join(content_parts)
+            if not content:
+                _LOGGER.debug("Received empty content from event: %s", event)
+                continue
 
             chunk: conversation.AssistantContentDeltaDict = {}
             if start:
                 chunk["role"] = "assistant"
                 start = False
-
-            # Extract deltas relative to total yielded so far in this stream
-            if current_thinking.startswith(total_thinking_yielded):
-                delta_thinking = current_thinking[len(total_thinking_yielded) :]
-            else:
-                delta_thinking = current_thinking
-
-            if delta_thinking:
-                chunk["thinking_content"] = delta_thinking
-                total_thinking_yielded += delta_thinking
-
-            if current_text.startswith(total_text_yielded):
-                delta_text = current_text[len(total_text_yielded) :]
-            else:
-                delta_text = current_text
-
-            if delta_text:
-                chunk["content"] = delta_text
-                total_text_yielded += delta_text
-
-            if (
-                chunk.get("content")
-                or chunk.get("thinking_content")
-                or chunk.get("role")
-            ):
-                yield chunk
+            chunk["content"] = content
+            yield chunk
     except (APIError, ValueError, HomeAssistantError) as err:
         _LOGGER.exception("Error sending message: %s %s", type(err), err)
         if isinstance(err, APIError):
@@ -230,13 +199,14 @@ class GoogleAdkConversationEntity(
         )
 
         intent_response = intent.IntentResponse(language=user_input.language)
-        if not isinstance(chat_log.content[-1], conversation.AssistantContent):
-            _LOGGER.error(
-                "Last content in chat log is not an AssistantContent: %s. This could be due to the model not returning a valid response",
-                chat_log.content[-1],
+        if not chat_log.content or not isinstance(chat_log.content[-1], conversation.AssistantContent):
+            _LOGGER.warning(
+                "Last content in chat log is not an AssistantContent. Agent returned no text. Defaulting to success message."
             )
-            raise HomeAssistantError(_ERROR_GETTING_RESPONSE)
-        intent_response.async_set_speech(chat_log.content[-1].content or "")  # type: ignore[possibly-missing-attribute]
+            intent_response.async_set_speech("Acción completada (sin comentarios del agente).")
+        else:
+            intent_response.async_set_speech(chat_log.content[-1].content or "")
+            
         return conversation.ConversationResult(
             response=intent_response,
             conversation_id=chat_log.conversation_id,

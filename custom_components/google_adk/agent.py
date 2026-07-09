@@ -250,11 +250,14 @@ async def _async_create_tools(
     if subentry.data.get("tools"):
         llm_api = await llm.async_get_api(hass, subentry.data["tools"], llm_context)
         for tool in llm_api.tools:
-            tools.append(
-                AdkLlmTool(
-                    llm_api, tool, hass, use_interactions_api=use_interactions_api
+            try:
+                tools.append(
+                    AdkLlmTool(
+                        llm_api, tool, hass, use_interactions_api=use_interactions_api
+                    )
                 )
-            )
+            except Exception as e:
+                _LOGGER.warning("Skipping tool '%s' due to schema conversion error: %s", tool.name, e)
     return tools
 
 
