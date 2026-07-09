@@ -1,6 +1,7 @@
 """Module for agents."""
 
 import logging
+import json
 from typing import Any, Optional, cast
 from slugify import slugify
 from collections.abc import Callable, Awaitable
@@ -239,8 +240,13 @@ class AdkLlmTool(BaseTool):
         )
         tool_response = await self._llm_api.async_call_tool(tool_input)
         if hasattr(tool_response, "response"):
-            return tool_response.response
-        return tool_response
+            response_data = tool_response.response
+        else:
+            response_data = tool_response
+
+        if isinstance(response_data, (dict, list)):
+            return json.dumps(response_data)
+        return str(response_data)
 
 
 async def _async_create_tools(
