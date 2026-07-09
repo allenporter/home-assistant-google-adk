@@ -138,6 +138,11 @@ class GoogleAdkConversationEntity(
         """Return a list of supported languages."""
         return MATCH_ALL
 
+    @property
+    def supported_features(self) -> int:
+        """Return supported features."""
+        return conversation.ConversationEntityFeature.CONTROL
+
     async def async_added_to_hass(self) -> None:
         """When entity is added to Home Assistant."""
         await super().async_added_to_hass()
