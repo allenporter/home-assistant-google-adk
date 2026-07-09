@@ -29,8 +29,9 @@ from .const import (
     CONF_DESCRIPTION,
     DOMAIN,
     CONF_MEMORY_ENABLED,
-    CONF_USE_INTERACTIONS_API,
 )
+
+CONF_USE_INTERACTIONS_API = "use_interactions_api"
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -236,7 +237,10 @@ class AdkLlmTool(BaseTool):
             tool_name=self.name,
             tool_args=args,
         )
-        return await self._llm_api.async_call_tool(tool_input)
+        tool_response = await self._llm_api.async_call_tool(tool_input)
+        if hasattr(tool_response, "response"):
+            return tool_response.response
+        return tool_response
 
 
 async def _async_create_tools(
