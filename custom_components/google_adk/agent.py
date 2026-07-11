@@ -238,15 +238,19 @@ class AdkLlmTool(BaseTool):
             tool_name=self.name,
             tool_args=args,
         )
-        tool_response = await self._llm_api.async_call_tool(tool_input)
-        if hasattr(tool_response, "response"):
-            response_data = tool_response.response
-        else:
-            response_data = tool_response
+        try:
+            tool_response = await self._llm_api.async_call_tool(tool_input)
+            if hasattr(tool_response, "response"):
+                response_data = tool_response.response
+            else:
+                response_data = tool_response
 
-        if isinstance(response_data, (dict, list)):
-            return json.dumps(response_data)
-        return str(response_data)
+            if isinstance(response_data, (dict, list)):
+                return json.dumps(response_data)
+            return str(response_data)
+        except Exception as err:
+            logging.getLogger(__name__).warning("Tool execution error: %s", err)
+            return f"Error executing tool: {err}"
 
 
 async def _async_create_tools(
