@@ -1,6 +1,7 @@
 """Module for agents."""
 
 import logging
+import json
 from typing import Any, Optional, cast
 from slugify import slugify
 from collections.abc import Callable, Awaitable
@@ -29,8 +30,9 @@ from .const import (
     CONF_DESCRIPTION,
     DOMAIN,
     CONF_MEMORY_ENABLED,
-    CONF_USE_INTERACTIONS_API,
 )
+
+CONF_USE_INTERACTIONS_API = "use_interactions_api"
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -236,7 +238,19 @@ class AdkLlmTool(BaseTool):
             tool_name=self.name,
             tool_args=args,
         )
-        return await self._llm_api.async_call_tool(tool_input)
+        try:
+            tool_response = await self._llm_api.async_call_tool(tool_input)
+            if hasattr(tool_response, "response"):
+                response_data = tool_response.response
+            else:
+                response_data = tool_response
+
+            if isinstance(response_data, (dict, list)):
+                return json.dumps(response_data)
+            return str(response_data)
+        except Exception as err:
+            logging.getLogger(__name__).warning("Tool execution error: %s", err)
+            return f"Error executing tool: {err}"
 
 
 async def _async_create_tools(
@@ -250,11 +264,14 @@ async def _async_create_tools(
     if subentry.data.get("tools"):
         llm_api = await llm.async_get_api(hass, subentry.data["tools"], llm_context)
         for tool in llm_api.tools:
-            tools.append(
-                AdkLlmTool(
-                    llm_api, tool, hass, use_interactions_api=use_interactions_api
+            try:
+                tools.append(
+                    AdkLlmTool(
+                        llm_api, tool, hass, use_interactions_api=use_interactions_api
+                    )
                 )
-            )
+            except Exception as e:
+                _LOGGER.warning("Skipping tool '%s' due to schema conversion error: %s", tool.name, e)
     return tools
 
 
