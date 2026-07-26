@@ -1,8 +1,6 @@
 """Tests for the google_adk component."""
 
 import pytest
-
-
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
 )

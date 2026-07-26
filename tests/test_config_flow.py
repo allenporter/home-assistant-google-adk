@@ -1,30 +1,28 @@
 """Tests for the config flow."""
 
-from unittest.mock import patch, MagicMock
 from collections.abc import Generator
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.core import HomeAssistant
-
+from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
 )
 
 from custom_components.google_adk.const import (
-    CONF_NAME,
-    DOMAIN,
-    CONF_MODEL,
     CONF_API_KEY,
     CONF_DESCRIPTION,
     CONF_INSTRUCTIONS,
-    CONF_TOOLS,
-    CONF_SUB_AGENTS,
     CONF_MEMORY_ENABLED,
     CONF_MEMORY_SUMMARIZE,
+    CONF_MODEL,
+    CONF_NAME,
+    CONF_SUB_AGENTS,
+    CONF_TOOLS,
     CONF_USE_INTERACTIONS_API,
+    DOMAIN,
 )
 
 
@@ -219,7 +217,7 @@ async def test_reconfigure_flow(
 
 
 @pytest.fixture(name="llm_api")
-def llm_api_fixture() -> Generator[None, None, None]:
+def llm_api_fixture() -> Generator[None]:
     """Fixture to override APIs with a fake API."""
     # Mock llm.async_get_apis to return only 'assist'
     mock_api = MagicMock()

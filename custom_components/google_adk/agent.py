@@ -1,37 +1,34 @@
 """Module for agents."""
 
 import logging
-from typing import Any, Optional, cast
-from slugify import slugify
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 
-from google.adk.tools.base_tool import BaseTool
-from google.adk.tools.tool_context import ToolContext
 from google.adk.agents import BaseAgent, LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.google_llm import Gemini
+from google.adk.sessions import Session
+from google.adk.tools.base_tool import BaseTool
+from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+from google.adk.tools.tool_context import ToolContext
 from google.genai.types import (
     FunctionDeclaration,
     Schema,
 )
+from homeassistant.config_entries import ConfigSubentry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import llm
+from slugify import slugify
 from voluptuous_openapi import convert
 
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigSubentry
-from homeassistant.helpers import llm
-
-from google.adk.tools.preload_memory_tool import PreloadMemoryTool
-from google.adk.sessions import Session
-
 from .const import (
-    CONF_MODEL,
-    CONF_INSTRUCTIONS,
     CONF_DESCRIPTION,
-    DOMAIN,
+    CONF_INSTRUCTIONS,
     CONF_MEMORY_ENABLED,
+    CONF_MODEL,
     CONF_USE_INTERACTIONS_API,
+    DOMAIN,
 )
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -205,7 +202,7 @@ class AdkLlmTool(BaseTool):
         else:
             self._parameters = None
 
-    def _get_declaration(self) -> Optional[FunctionDeclaration]:
+    def _get_declaration(self) -> FunctionDeclaration | None:
         """Gets the OpenAPI specification of this tool in the form of a FunctionDeclaration."""
         if self._use_interactions_api:
             # The Interactions API requires JSON Schema (lowercase types) and always
