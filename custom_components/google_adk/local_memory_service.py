@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, override
 
 from google import genai
@@ -137,7 +137,7 @@ class LocalFileMemoryService(BaseMemoryService):
                 # Usually we want to keep it condensed, so we might replace the old summary with a new one
                 # that includes the old summary's context + new events.
                 new_summary_event = {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "author": "memory_summarizer",
                     "content": {
                         "role": "model",
@@ -172,9 +172,7 @@ class LocalFileMemoryService(BaseMemoryService):
                 continue
 
             event_data = {
-                "timestamp": datetime.fromtimestamp(
-                    event.timestamp, tz=timezone.utc
-                ).isoformat()
+                "timestamp": datetime.fromtimestamp(event.timestamp, tz=UTC).isoformat()
                 if event.timestamp
                 else None,
                 "author": event.author,
