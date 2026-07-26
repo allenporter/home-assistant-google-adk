@@ -1,20 +1,19 @@
 """Tests for the conversation integration."""
 
-from collections.abc import Generator, AsyncGenerator
-from unittest.mock import AsyncMock, patch, Mock
+from collections.abc import AsyncGenerator, Generator
+from unittest.mock import AsyncMock, Mock, patch
 
-import voluptuous as vol
-
-from google.genai.errors import APIError, ClientError
-from google.genai import types
 import httpx
 import pytest
-
-from homeassistant.const import Platform
-from homeassistant.config_entries import ConfigEntryState
+import voluptuous as vol
+from google.genai import types
+from google.genai.errors import APIError, ClientError
 from homeassistant.components import conversation
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import Platform
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import intent
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.google_adk.const import (
     CONF_API_KEY,
@@ -25,9 +24,6 @@ from custom_components.google_adk.const import (
     CONF_TOOLS,
     DOMAIN,
 )
-
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
 
 TEST_AGENT_ID = "conversation.assistant_agent"
 
@@ -64,7 +60,7 @@ def mock_platforms() -> list[Platform]:
 
 
 @pytest.fixture(name="mock_client")
-def mock_client_fixture() -> Generator[Mock, None, None]:
+def mock_client_fixture() -> Generator[Mock]:
     with patch("google.genai.Client") as mock_client_class:
         mock_client = mock_client_class.return_value
         mock_client.vertexai.return_value = False
@@ -76,8 +72,8 @@ def mock_send_message_stream_fixture(mock_client: Mock) -> Generator[AsyncMock]:
     """Mock stream response."""
 
     async def mock_generator(
-        stream: Generator[types.GenerateContentResponse, None],
-    ) -> AsyncGenerator[types.GenerateContentResponse, None]:
+        stream: Generator[types.GenerateContentResponse],
+    ) -> AsyncGenerator[types.GenerateContentResponse]:
         for value in stream:
             yield value
 
@@ -91,7 +87,7 @@ def mock_send_message_stream_fixture(mock_client: Mock) -> Generator[AsyncMock]:
 
 
 @pytest.fixture(name="mock_tool", autouse=True)
-def mock_tool_fixture(hass: HomeAssistant) -> Generator[None, None, None]:
+def mock_tool_fixture(hass: HomeAssistant) -> Generator[None]:
     """Mock tool retrieval."""
     mock_tool = AsyncMock()
     mock_tool.name = "test_tool"
