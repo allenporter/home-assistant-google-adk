@@ -5,13 +5,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from datetime import datetime
-from typing import TYPE_CHECKING, Any
-
-from typing_extensions import override
-
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.storage import Store
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, override
 
 from google import genai
 from google.adk.memory.base_memory_service import (
@@ -20,6 +15,8 @@ from google.adk.memory.base_memory_service import (
 )
 from google.adk.memory.memory_entry import MemoryEntry
 from google.genai.types import Content, Part
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 
 if TYPE_CHECKING:
     from google.adk.sessions.session import Session
@@ -46,7 +43,7 @@ def _user_key(app_name: str, user_id: str) -> str:
 
 def _extract_words_lower(text: str) -> set[str]:
     """Extracts words (including digits) from a string and converts them to lowercase."""
-    return set([word.lower() for word in re.findall(r"\w+", text)])
+    return {word.lower() for word in re.findall(r"\w+", text)}
 
 
 class LocalFileMemoryService(BaseMemoryService):
@@ -140,7 +137,7 @@ class LocalFileMemoryService(BaseMemoryService):
                 # Usually we want to keep it condensed, so we might replace the old summary with a new one
                 # that includes the old summary's context + new events.
                 new_summary_event = {
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "author": "memory_summarizer",
                     "content": {
                         "role": "model",
@@ -156,7 +153,7 @@ class LocalFileMemoryService(BaseMemoryService):
 
                 await self._store.async_save(self._session_events)
                 _LOGGER.debug("Background summarization complete for user: %s", user_id)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 _LOGGER.error("Failed to perform background summarization: %s", e)
 
     @override
@@ -175,7 +172,9 @@ class LocalFileMemoryService(BaseMemoryService):
                 continue
 
             event_data = {
-                "timestamp": datetime.fromtimestamp(event.timestamp).isoformat()
+                "timestamp": datetime.fromtimestamp(
+                    event.timestamp, tz=timezone.utc
+                ).isoformat()
                 if event.timestamp
                 else None,
                 "author": event.author,

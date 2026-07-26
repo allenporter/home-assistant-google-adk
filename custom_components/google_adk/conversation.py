@@ -1,37 +1,36 @@
 """Conversation agent for the Rulebook agent."""
 
+import logging
 from collections.abc import AsyncGenerator
 from functools import partial
 from typing import Literal
-import logging
 
 from google import genai
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.adk.events.event import Event
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
 from google.genai import types
 from google.genai.errors import APIError
-from google.adk.agents.run_config import StreamingMode, RunConfig
-from google.adk.events.event import Event
-from google.adk.sessions import InMemorySessionService
-from google.adk.runners import Runner
-
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.const import MATCH_ALL
-from homeassistant.core import HomeAssistant, Context
-from homeassistant.helpers import device_registry as dr, intent, llm
+from homeassistant.core import Context, HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import intent, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import (
-    DOMAIN,
-    CONF_MEMORY_ENABLED,
-    CONF_API_KEY,
-    CONF_MODEL,
-    CONF_MEMORY_SUMMARIZE,
-)
-from .types import GoogleAdkConfigEntry
-from .local_memory_service import LocalFileMemoryService
 from . import agent
-
+from .const import (
+    CONF_API_KEY,
+    CONF_MEMORY_ENABLED,
+    CONF_MEMORY_SUMMARIZE,
+    CONF_MODEL,
+    DOMAIN,
+)
+from .local_memory_service import LocalFileMemoryService
+from .types import GoogleAdkConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 _ERROR_GETTING_RESPONSE = "Sorry, I had a problem getting a response from the Agent."
@@ -54,7 +53,7 @@ async def async_setup_entry(
 
 async def _transform_stream(
     chat_log: conversation.ChatLog,
-    result: AsyncGenerator[Event, None],
+    result: AsyncGenerator[Event],
 ) -> AsyncGenerator[conversation.AssistantContentDeltaDict]:
     """Transform an OpenAI delta stream into HA format."""
     start = True
@@ -127,7 +126,7 @@ async def _transform_stream(
             ):
                 yield chunk
     except (APIError, ValueError, HomeAssistantError) as err:
-        _LOGGER.exception("Error sending message: %s %s", type(err), err)
+        _LOGGER.exception("Error sending message")
         if isinstance(err, APIError):
             message = err.message
         else:
@@ -295,7 +294,7 @@ class GoogleAdkConversationEntity(
 
         last_content = chat_log.content[-1]
         if not isinstance(last_content, conversation.UserContent):
-            raise ValueError(
+            raise TypeError(
                 "Last content in chat log must be UserContent, "
                 f"got {type(last_content).__name__}"
             )

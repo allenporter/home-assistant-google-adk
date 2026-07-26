@@ -2,39 +2,36 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from typing import Any, cast
-import logging
 
 import voluptuous as vol
-
-from homeassistant.helpers import selector
 from homeassistant.config_entries import (
-    ConfigFlowResult,
-    ConfigEntryState,
-    ConfigEntry,
     SOURCE_REAUTH,
-    ConfigSubentryFlow,
+    ConfigEntry,
+    ConfigEntryState,
     ConfigFlow,
+    ConfigFlowResult,
+    ConfigSubentryFlow,
     SubentryFlowResult,
 )
-from homeassistant.core import callback, HomeAssistant
-from homeassistant.helpers import llm
-
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import llm, selector
 
 from .const import (
-    CONF_NAME,
-    CONF_DESCRIPTION,
-    CONF_MODEL,
-    CONF_INSTRUCTIONS,
     CONF_API_KEY,
-    CONF_TOOLS,
-    CONF_SUB_AGENTS,
+    CONF_DESCRIPTION,
+    CONF_INSTRUCTIONS,
     CONF_MEMORY_ENABLED,
     CONF_MEMORY_SUMMARIZE,
+    CONF_MODEL,
+    CONF_NAME,
+    CONF_SUB_AGENTS,
+    CONF_TOOLS,
     CONF_USE_INTERACTIONS_API,
-    DOMAIN,
     DEFAULT_TITLE,
+    DOMAIN,
 )
 
 _LOGGER = logging.getLogger(__name__)
