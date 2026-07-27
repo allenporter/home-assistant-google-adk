@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/allenporter/cookiecutter-home-assistant-custom-component/",
-  "commit": "896210f9c86f629253cdab611b412f4d626f240b",
+  "commit": "f9f00d0e06f8bd48fe1896a60dbeba1b64e8d7b0",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -12,7 +12,8 @@
       "name": "Google ADK",
       "description": "Home Assistant custom component that offers Agent functionality from Google ADK",
       "version": "0.0.1",
-      "_template": "https://github.com/allenporter/cookiecutter-home-assistant-custom-component/"
+      "_template": "https://github.com/allenporter/cookiecutter-home-assistant-custom-component/",
+      "_commit": "f9f00d0e06f8bd48fe1896a60dbeba1b64e8d7b0"
     }
   },
   "directory": null
