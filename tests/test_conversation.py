@@ -8,7 +8,7 @@ import pytest
 import voluptuous as vol
 from google.genai import types
 from google.genai.errors import APIError, ClientError
-from homeassistant.components import conversation
+from homeassistant.components import conversation, llm
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.core import Context, HomeAssistant
@@ -98,9 +98,9 @@ def mock_tool_fixture(hass: HomeAssistant) -> Generator[None]:
     mock_tool.async_call.return_value = "Test response"
 
     with patch(
-        "homeassistant.helpers.llm.AssistAPI._async_get_tools", return_value=[]
-    ) as mock_get_tools:
-        mock_get_tools.return_value = [mock_tool]
+        "homeassistant.components.llm.async_get_tools",
+        return_value=llm.LLMTools(tools=[mock_tool]),
+    ):
         yield
 
 

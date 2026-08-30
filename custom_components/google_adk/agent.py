@@ -18,8 +18,8 @@ from google.genai.types import (
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
+from probatio import to_openapi
 from slugify import slugify
-from voluptuous_openapi import convert
 
 from .const import (
     CONF_DESCRIPTION,
@@ -198,7 +198,9 @@ class AdkLlmTool(BaseTool):
         self._llm_tool = tool
         self._use_interactions_api = use_interactions_api
         if tool.parameters.schema:
-            self._parameters = _format_schema(convert(tool.parameters))
+            self._parameters = _format_schema(
+                to_openapi(tool.parameters, custom_serializer=llm_api.custom_serializer)
+            )
         else:
             self._parameters = None
 
