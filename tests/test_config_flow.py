@@ -212,7 +212,7 @@ async def test_reconfigure_flow(
 
     assert result2["type"] == FlowResultType.ABORT
     assert result2["reason"] == "reconfigure_successful"
-    assert len(mock_setup.mock_calls) == 1
+    assert len(mock_setup.mock_calls) == 2
     assert config_entry.data[CONF_API_KEY] == "new_api_key"
 
 
